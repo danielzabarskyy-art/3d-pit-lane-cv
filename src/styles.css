@@ -81,8 +81,7 @@ a {
 }
 
 .active-card {
-  border: 1px solid rgba(125, 211, 252, 0.35);
-  border-color: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 24px;
   padding: 18px;
   background:
@@ -198,7 +197,7 @@ a {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  max-width: min(720px, calc(100vw - 40px));
+  max-width: min(760px, calc(100vw - 40px));
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 999px;
   padding: 12px 16px;
@@ -258,6 +257,17 @@ a {
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
 }
 
+.track-marker {
+  padding: 6px 12px;
+  border: 1px solid rgba(248, 250, 252, 0.45);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.84);
+  color: white;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+}
+
 .intro {
   position: absolute;
   inset: 0;
@@ -277,6 +287,10 @@ a {
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
 }
 
+.intro-card.wide {
+  width: min(760px, 100%);
+}
+
 .intro-card h2 {
   margin: 0;
   font-size: clamp(32px, 6vw, 56px);
@@ -290,7 +304,59 @@ a {
   line-height: 1.7;
 }
 
-.intro-card button {
+.car-select-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.car-select-card {
+  min-height: 145px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 24px;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.8);
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.car-select-card:hover,
+.car-select-card.selected {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), transparent 45%),
+    rgba(15, 23, 42, 0.92);
+}
+
+.car-select-card .car-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  background: var(--accent);
+  color: #020617;
+  font-weight: 950;
+}
+
+.car-select-card strong {
+  display: block;
+  font-size: 18px;
+}
+
+.car-select-card small {
+  display: block;
+  margin-top: 7px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.start-button {
   margin-top: 24px;
   border: none;
   border-radius: 18px;
@@ -321,5 +387,9 @@ a {
     right: 12px;
     bottom: 12px;
     border-radius: 22px;
+  }
+
+  .car-select-grid {
+    grid-template-columns: 1fr;
   }
 }

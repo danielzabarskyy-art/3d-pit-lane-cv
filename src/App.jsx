@@ -14,6 +14,30 @@ const MODEL_PATHS = {
   taxiStylized: "./models/Taxi_stylized.fbx",
 };
 
+const PLAYER_CARS = [
+  {
+    id: "police",
+    label: "Police",
+    model: "police",
+    accent: "#60a5fa",
+    description: "Clean and professional.",
+  },
+  {
+    id: "taxi",
+    label: "Taxi",
+    model: "taxiStylized",
+    accent: "#facc15",
+    description: "Bold and noticeable.",
+  },
+  {
+    id: "classic",
+    label: "Classic",
+    model: "carStylized",
+    accent: "#38bdf8",
+    description: "Simple and balanced.",
+  },
+];
+
 const CV_SECTIONS = [
   {
     id: "stratasys",
@@ -81,6 +105,8 @@ const CV_SECTIONS = [
   },
 ];
 
+// Chronological path: player starts at z = -17 and drives forward in +Z.
+// Pit order on the track: Stratasys -> BGRaicing -> Education -> Skills -> Military.
 const PIT_POSITIONS = [
   { x: 6.1, z: -12.0 },
   { x: 6.1, z: -6.0 },
@@ -89,49 +115,63 @@ const PIT_POSITIONS = [
   { x: 6.1, z: 12.0 },
 ];
 
+function prepareFbxScene(fbx, targetSize = 2.25) {
+  const model = clone(fbx);
+  const root = new THREE.Group();
+
+  model.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+      child.frustumCulled = false;
+
+      if (child.material) {
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((material) => {
+          material.transparent = false;
+          material.opacity = 1;
+          material.side = THREE.DoubleSide;
+          if ("roughness" in material) material.roughness = 0.45;
+          if ("metalness" in material) material.metalness = 0.08;
+          material.needsUpdate = true;
+        });
+      }
+    }
+  });
+
+  const box = new THREE.Box3().setFromObject(model);
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+
+  box.getSize(size);
+  box.getCenter(center);
+
+  // Important fix:
+  // Center the model using a child transform, then scale the parent group.
+  // This avoids the previous issue where the FBX could be translated far away after scaling.
+  model.position.set(-center.x, -box.min.y, -center.z);
+
+  root.add(model);
+
+  const largest = Math.max(size.x, size.y, size.z) || 1;
+  root.scale.setScalar(targetSize / largest);
+
+  // Many FBX car assets face a different axis. This rotation keeps the front visually aligned with +Z.
+  root.rotation.y = Math.PI;
+
+  root.animations = fbx.animations || [];
+
+  return root;
+}
+
 function usePreparedFbx(path) {
   const fbx = useLoader(FBXLoader, path);
-
-  const prepared = useMemo(() => {
-    const model = clone(fbx);
-    const box = new THREE.Box3().setFromObject(model);
-    const size = new THREE.Vector3();
-    const center = new THREE.Vector3();
-
-    box.getSize(size);
-    box.getCenter(center);
-
-    model.position.sub(center);
-
-    const largest = Math.max(size.x, size.y, size.z) || 1;
-    const targetSize = 2.05;
-    model.scale.setScalar(targetSize / largest);
-
-    model.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-
-        if (child.material) {
-          const materials = Array.isArray(child.material) ? child.material : [child.material];
-          materials.forEach((mat) => {
-            mat.roughness = mat.roughness ?? 0.48;
-            mat.metalness = mat.metalness ?? 0.08;
-            mat.needsUpdate = true;
-          });
-        }
-      }
-    });
-
-    return model;
-  }, [fbx]);
-
-  return prepared;
+  return useMemo(() => prepareFbxScene(fbx), [fbx]);
 }
 
 function FbxCar({ type = "carStylized", scale = 1, ...props }) {
-  const model = usePreparedFbx(MODEL_PATHS[type] || MODEL_PATHS.carStylized);
-  const instance = useMemo(() => clone(model), [model]);
+  const preparedModel = usePreparedFbx(MODEL_PATHS[type] || MODEL_PATHS.carStylized);
+  const instance = useMemo(() => clone(preparedModel), [preparedModel]);
   const mixerRef = useRef(null);
 
   useEffect(() => {
@@ -171,6 +211,10 @@ function FallbackCar({ color = "#38bdf8", scale = 1, ...props }) {
       <mesh position={[0, 0.78, -0.1]} castShadow>
         <boxGeometry args={[0.9, 0.45, 0.95]} />
         <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.2} />
+      </mesh>
+      <mesh position={[0, 0.42, 1.24]} castShadow>
+        <boxGeometry args={[0.95, 0.18, 0.18]} />
+        <meshStandardMaterial color="#e2e8f0" emissive="#bae6fd" emissiveIntensity={0.4} />
       </mesh>
       {[[-0.78, 0.2, 0.72], [0.78, 0.2, 0.72], [-0.78, 0.2, -0.72], [0.78, 0.2, -0.72]].map((pos, index) => (
         <mesh key={index} position={pos} rotation={[0, 0, Math.PI / 2]} castShadow>
@@ -219,6 +263,14 @@ function Road() {
         <planeGeometry args={[5.2, 35]} />
         <meshStandardMaterial color="#111827" roughness={0.92} />
       </mesh>
+
+      <Html position={[-1.2, 0.08, -16.5]} transform rotation={[-Math.PI / 2, 0, 0]} distanceFactor={12}>
+        <div className="track-marker">START</div>
+      </Html>
+
+      <Html position={[-1.2, 0.08, 16.5]} transform rotation={[-Math.PI / 2, 0, 0]} distanceFactor={12}>
+        <div className="track-marker">FINISH</div>
+      </Html>
     </group>
   );
 }
@@ -294,7 +346,7 @@ function AutoPitCar({ section, pitPosition, offset, onArrive }) {
 
     if (carRef.current) {
       carRef.current.position.set(x, 0.02, z);
-      carRef.current.rotation.y = pitBlend > 0.22 ? -Math.PI / 2 : 0;
+      carRef.current.rotation.y = pitBlend > 0.22 ? Math.PI / 2 : 0;
     }
 
     if (pitBlend > 0.92 && !arrivedRef.current) {
@@ -309,12 +361,12 @@ function AutoPitCar({ section, pitPosition, offset, onArrive }) {
 
   return (
     <group ref={carRef}>
-      <Car type={section.carType} accent={section.accent} scale={0.78} rotation={[0, 0, 0]} />
+      <Car type={section.carType} accent={section.accent} scale={0.95} />
     </group>
   );
 }
 
-function PlayerCar({ pitStops, onSelect, carRef }) {
+function PlayerCar({ pitStops, onSelect, carRef, playerModel }) {
   const keys = useRef({});
   const lastSelected = useRef(null);
 
@@ -339,12 +391,13 @@ function PlayerCar({ pitStops, onSelect, carRef }) {
     const car = carRef.current;
     if (!car) return;
 
-    const speed = 5.9;
+    const speed = 6.1;
     let dx = 0;
     let dz = 0;
 
-    if (keys.current["w"] || keys.current["arrowup"]) dz -= 1;
-    if (keys.current["s"] || keys.current["arrowdown"]) dz += 1;
+    // Chronological forward direction is +Z.
+    if (keys.current["w"] || keys.current["arrowup"]) dz += 1;
+    if (keys.current["s"] || keys.current["arrowdown"]) dz -= 1;
     if (keys.current["a"] || keys.current["arrowleft"]) dx -= 1;
     if (keys.current["d"] || keys.current["arrowright"]) dx += 1;
 
@@ -368,8 +421,8 @@ function PlayerCar({ pitStops, onSelect, carRef }) {
   });
 
   return (
-    <group ref={carRef} position={[-1.15, 0.02, 15]}>
-      <Car type="police" accent="#f8fafc" scale={0.88} />
+    <group ref={carRef} position={[-1.15, 0.02, -16]}>
+      <Car type={playerModel} accent="#f8fafc" scale={1.05} />
       <Html position={[0, 1.6, 0]} transform distanceFactor={9}>
         <div className="player-tag">YOU</div>
       </Html>
@@ -386,17 +439,18 @@ function CameraRig({ targetRef }) {
     const target = targetRef.current;
     if (!target) return;
 
-    desired.set(target.position.x + 8.8, 7.4, target.position.z + 9.6);
+    // Camera behind the player while moving chronologically forward in +Z.
+    desired.set(target.position.x + 8.8, 7.4, target.position.z - 9.6);
     camera.position.lerp(desired, 0.055);
 
-    lookAt.set(target.position.x + 1.25, 0.6, target.position.z);
+    lookAt.set(target.position.x + 1.25, 0.6, target.position.z + 1.4);
     camera.lookAt(lookAt);
   });
 
   return null;
 }
 
-function Scene({ activeId, onSelect }) {
+function Scene({ activeId, onSelect, playerModel }) {
   const playerRef = useRef();
 
   const pitStops = CV_SECTIONS.map((section, index) => ({
@@ -409,8 +463,8 @@ function Scene({ activeId, onSelect }) {
       <color attach="background" args={["#020617"]} />
       <fog attach="fog" args={["#020617", 16, 50]} />
 
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[9, 12, 8]} intensity={2.6} castShadow shadow-mapSize={[2048, 2048]} />
+      <ambientLight intensity={0.65} />
+      <directionalLight position={[9, 12, 8]} intensity={2.8} castShadow shadow-mapSize={[2048, 2048]} />
       <pointLight position={[6, 3.5, -12]} intensity={3} color="#38bdf8" />
       <pointLight position={[6, 3.5, 0]} intensity={2.4} color="#a78bfa" />
       <pointLight position={[6, 3.5, 12]} intensity={2.4} color="#f97316" />
@@ -441,7 +495,7 @@ function Scene({ activeId, onSelect }) {
         />
       ))}
 
-      <PlayerCar pitStops={pitStops} onSelect={onSelect} carRef={playerRef} />
+      <PlayerCar pitStops={pitStops} onSelect={onSelect} carRef={playerRef} playerModel={playerModel} />
       <CameraRig targetRef={playerRef} />
 
       <ContactShadows opacity={0.5} scale={30} blur={2.8} far={12} position={[0, 0.02, 0]} />
@@ -496,15 +550,47 @@ function CvPanel({ activeSection, onSelect }) {
   );
 }
 
+function CarSelectOverlay({ selectedCar, setSelectedCar, onStart }) {
+  return (
+    <div className="intro">
+      <div className="intro-card wide">
+        <p className="eyebrow">Interactive CV concept</p>
+        <h2>Select your car before entering the pit lane.</h2>
+        <p>
+          Drive chronologically through the CV: Stratasys, BGRaicing, Education, Skills, and Military Service.
+        </p>
+
+        <div className="car-select-grid">
+          {PLAYER_CARS.map((car) => (
+            <button
+              key={car.id}
+              className={`car-select-card ${selectedCar.id === car.id ? "selected" : ""}`}
+              style={{ "--accent": car.accent }}
+              onClick={() => setSelectedCar(car)}
+            >
+              <span className="car-icon">◆</span>
+              <strong>{car.label}</strong>
+              <small>{car.description}</small>
+            </button>
+          ))}
+        </div>
+
+        <button className="start-button" onClick={onStart}>Start driving</button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeSection, setActiveSection] = useState(CV_SECTIONS[0]);
+  const [selectedCar, setSelectedCar] = useState(PLAYER_CARS[0]);
   const [isIntroOpen, setIsIntroOpen] = useState(true);
 
   return (
     <main className="app">
-      <Canvas shadows camera={{ position: [8, 7, 12], fov: 48 }}>
+      <Canvas shadows camera={{ position: [8, 7, -22], fov: 48 }}>
         <Suspense fallback={null}>
-          <Scene activeId={activeSection.id} onSelect={setActiveSection} />
+          <Scene activeId={activeSection.id} onSelect={setActiveSection} playerModel={selectedCar.model} />
         </Suspense>
       </Canvas>
 
@@ -512,21 +598,15 @@ export default function App() {
 
       <div className="hud">
         <strong>Drive:</strong> WASD / Arrow keys
-        <span>Enter a pit or click a pit label to reveal a CV section.</span>
+        <span>Start at the beginning of the timeline and enter pits in chronological order.</span>
       </div>
 
       {isIntroOpen && (
-        <div className="intro">
-          <div className="intro-card">
-            <p className="eyebrow">Interactive CV concept</p>
-            <h2>Drive into the pits to reveal Daniel’s CV.</h2>
-            <p>
-              Use the police car to move around the pit lane. Each pit stop opens a different CV section.
-              Animated FBX cars will also enter the pits automatically.
-            </p>
-            <button onClick={() => setIsIntroOpen(false)}>Start driving</button>
-          </div>
-        </div>
+        <CarSelectOverlay
+          selectedCar={selectedCar}
+          setSelectedCar={setSelectedCar}
+          onStart={() => setIsIntroOpen(false)}
+        />
       )}
     </main>
   );
