@@ -26,7 +26,9 @@ a {
   position: relative;
   width: 100%;
   height: 100%;
-  background: #020617;
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 34%),
+    linear-gradient(135deg, #020617, #0f172a);
 }
 
 .cv-panel {
@@ -39,7 +41,7 @@ a {
   padding: 18px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 28px;
-  background: rgba(2, 6, 23, 0.78);
+  background: rgba(2, 6, 23, 0.82);
   backdrop-filter: blur(18px);
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
 }
@@ -80,25 +82,32 @@ a {
   font-weight: 900;
 }
 
-.active-card {
-  border: 1px solid var(--accent);
+.active-card,
+.empty-card {
   border-radius: 24px;
   padding: 18px;
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 45%),
-    rgba(15, 23, 42, 0.88);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.active-card {
+  border: 1px solid var(--accent);
+}
+
+.empty-card {
+  border: 1px solid rgba(148, 163, 184, 0.28);
 }
 
 .pit-name {
   margin: 0 0 10px;
-  color: var(--accent);
+  color: var(--accent, #7dd3fc);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.18em;
 }
 
-.active-card h2 {
+.active-card h2,
+.empty-card h2 {
   margin: 0;
   font-size: 21px;
   line-height: 1.18;
@@ -145,6 +154,7 @@ a {
 }
 
 .section-buttons button {
+  position: relative;
   width: 100%;
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 18px;
@@ -153,7 +163,7 @@ a {
   color: #f8fafc;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s, opacity 0.2s;
   font-weight: 850;
 }
 
@@ -165,11 +175,31 @@ a {
   text-transform: uppercase;
 }
 
+.section-buttons button em {
+  position: absolute;
+  right: 13px;
+  top: 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
 .section-buttons button:hover,
 .section-buttons button.selected {
   transform: translateX(-3px);
   border-color: var(--accent);
   background: rgba(30, 41, 59, 0.92);
+}
+
+.section-buttons button.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.section-buttons button.locked:hover {
+  transform: none;
+  border-color: rgba(148, 163, 184, 0.24);
 }
 
 .contact-box {
@@ -215,19 +245,19 @@ a {
   color: #cbd5e1;
 }
 
-.pit-label {
-  min-width: 118px;
+.gate-label {
+  min-width: 124px;
   border: 1px solid rgba(148, 163, 184, 0.45);
   border-radius: 14px;
   padding: 10px 12px;
-  background: rgba(2, 6, 23, 0.84);
+  background: rgba(2, 6, 23, 0.88);
   color: white;
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
 }
 
-.pit-label span {
+.gate-label span {
   display: block;
   margin-bottom: 3px;
   color: var(--accent);
@@ -237,14 +267,15 @@ a {
   text-transform: uppercase;
 }
 
-.pit-label strong {
+.gate-label strong {
   display: block;
   font-size: 13px;
 }
 
-.pit-label.active {
+.gate-label.active,
+.gate-label.passed {
   border-color: var(--accent);
-  background: rgba(14, 165, 233, 0.34);
+  background: rgba(14, 165, 233, 0.24);
 }
 
 .player-tag {
@@ -268,37 +299,36 @@ a {
   letter-spacing: 0.16em;
 }
 
-.intro {
+.select-screen {
   position: absolute;
   inset: 0;
+  z-index: 50;
   display: grid;
   place-items: center;
   padding: 20px;
-  background: radial-gradient(circle at center, rgba(14, 165, 233, 0.16), rgba(2, 6, 23, 0.82));
-  backdrop-filter: blur(6px);
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 36%),
+    radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.12), transparent 32%),
+    linear-gradient(135deg, #020617, #0f172a);
 }
 
-.intro-card {
-  width: min(580px, 100%);
+.select-card {
+  width: min(760px, 100%);
   border: 1px solid rgba(125, 211, 252, 0.35);
   border-radius: 30px;
   padding: 34px;
-  background: rgba(2, 6, 23, 0.88);
+  background: rgba(2, 6, 23, 0.94);
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
 }
 
-.intro-card.wide {
-  width: min(760px, 100%);
-}
-
-.intro-card h2 {
+.select-card h2 {
   margin: 0;
-  font-size: clamp(32px, 6vw, 56px);
+  font-size: clamp(36px, 6vw, 64px);
   line-height: 0.98;
   letter-spacing: -0.06em;
 }
 
-.intro-card p {
+.select-subtitle {
   margin: 18px 0 0;
   color: #cbd5e1;
   line-height: 1.7;
@@ -327,9 +357,7 @@ a {
 .car-select-card.selected {
   transform: translateY(-4px);
   border-color: var(--accent);
-  background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), transparent 45%),
-    rgba(15, 23, 42, 0.92);
+  background: rgba(15, 23, 42, 0.95);
 }
 
 .car-select-card .car-icon {

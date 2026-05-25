@@ -1,15 +1,27 @@
-# Daniel Zabarsky – 3D Pit Lane CV v2
+# Daniel Zabarsky – 3D Gate CV v3
 
-Updated version with:
+Clean gate-based version.
 
-1. Fixed FBX model visibility.
-2. Chronological pit order:
-   - Pit 01: Stratasys
-   - Pit 02: BGRaicing
-   - Pit 03: Education
-   - Pit 04: Skills
-   - Pit 05: Military
-3. Car selection before starting the game.
+## Main fixes
+
+1. Selection screen is now clean and static:
+   - The 3D scene does not render behind the selection screen.
+   - No labels or car animations bleed through.
+
+2. Only one car exists in the game:
+   - The selected player car.
+   - No automatic traffic cars.
+
+3. Pits were replaced by gates:
+   - Pass a gate to unlock and show the matching CV section on the right side.
+
+## Chronological gate order
+
+- Gate 01: Stratasys
+- Gate 02: BGRaicing
+- Gate 03: Education
+- Gate 04: Skills
+- Gate 05: Military
 
 ## Included model files
 

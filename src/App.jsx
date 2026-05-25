@@ -20,21 +20,21 @@ const PLAYER_CARS = [
     label: "Police",
     model: "police",
     accent: "#60a5fa",
-    description: "Clean and professional.",
+    description: "Clean, sharp, and professional.",
   },
   {
     id: "taxi",
     label: "Taxi",
     model: "taxiStylized",
     accent: "#facc15",
-    description: "Bold and noticeable.",
+    description: "Bold, visible, and fun.",
   },
   {
     id: "classic",
     label: "Classic",
     model: "carStylized",
     accent: "#38bdf8",
-    description: "Simple and balanced.",
+    description: "Simple, balanced, and smooth.",
   },
 ];
 
@@ -42,8 +42,7 @@ const CV_SECTIONS = [
   {
     id: "stratasys",
     label: "Stratasys",
-    pit: "Pit 01",
-    carType: "carStylized",
+    gate: "Gate 01",
     accent: "#38bdf8",
     title: "Stratasys Ltd. – Mechanical Engineering Student",
     period: "Feb 2025 – Present",
@@ -58,8 +57,7 @@ const CV_SECTIONS = [
   {
     id: "bgracing",
     label: "BGRaicing",
-    pit: "Pit 02",
-    carType: "taxiStylized",
+    gate: "Gate 02",
     accent: "#facc15",
     title: "BGRaicing – System Engineer",
     period: "2024 – Present",
@@ -73,8 +71,7 @@ const CV_SECTIONS = [
   {
     id: "education",
     label: "Education",
-    pit: "Pit 03",
-    carType: "car",
+    gate: "Gate 03",
     accent: "#a78bfa",
     title: "B.Sc. Mechanical Engineering – Ben-Gurion University",
     period: "2023 – Present | Expected Graduation: 2026 | GPA: 81",
@@ -83,8 +80,7 @@ const CV_SECTIONS = [
   {
     id: "skills",
     label: "Skills",
-    pit: "Pit 04",
-    carType: "taxi",
+    gate: "Gate 04",
     accent: "#22c55e",
     title: "Skills",
     period: "Technical stack",
@@ -93,8 +89,7 @@ const CV_SECTIONS = [
   {
     id: "military",
     label: "Military",
-    pit: "Pit 05",
-    carType: "policeStylized",
+    gate: "Gate 05",
     accent: "#f97316",
     title: "Combat Officer, Battalion 601 – Combat Engineering Corps",
     period: "2015 – 2020",
@@ -105,17 +100,9 @@ const CV_SECTIONS = [
   },
 ];
 
-// Chronological path: player starts at z = -17 and drives forward in +Z.
-// Pit order on the track: Stratasys -> BGRaicing -> Education -> Skills -> Military.
-const PIT_POSITIONS = [
-  { x: 6.1, z: -12.0 },
-  { x: 6.1, z: -6.0 },
-  { x: 6.1, z: 0.0 },
-  { x: 6.1, z: 6.0 },
-  { x: 6.1, z: 12.0 },
-];
+const GATE_Z = [-12, -6, 0, 6, 12];
 
-function prepareFbxScene(fbx, targetSize = 2.25) {
+function prepareFbxScene(fbx, targetSize = 2.4) {
   const model = clone(fbx);
   const root = new THREE.Group();
 
@@ -146,21 +133,14 @@ function prepareFbxScene(fbx, targetSize = 2.25) {
   box.getSize(size);
   box.getCenter(center);
 
-  // Important fix:
-  // Center the model using a child transform, then scale the parent group.
-  // This avoids the previous issue where the FBX could be translated far away after scaling.
   model.position.set(-center.x, -box.min.y, -center.z);
-
   root.add(model);
 
   const largest = Math.max(size.x, size.y, size.z) || 1;
   root.scale.setScalar(targetSize / largest);
-
-  // Many FBX car assets face a different axis. This rotation keeps the front visually aligned with +Z.
   root.rotation.y = Math.PI;
 
   root.animations = fbx.animations || [];
-
   return root;
 }
 
@@ -212,10 +192,6 @@ function FallbackCar({ color = "#38bdf8", scale = 1, ...props }) {
         <boxGeometry args={[0.9, 0.45, 0.95]} />
         <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.2} />
       </mesh>
-      <mesh position={[0, 0.42, 1.24]} castShadow>
-        <boxGeometry args={[0.95, 0.18, 0.18]} />
-        <meshStandardMaterial color="#e2e8f0" emissive="#bae6fd" emissiveIntensity={0.4} />
-      </mesh>
       {[[-0.78, 0.2, 0.72], [0.78, 0.2, 0.72], [-0.78, 0.2, -0.72], [0.78, 0.2, -0.72]].map((pos, index) => (
         <mesh key={index} position={pos} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[0.25, 0.25, 0.22, 24]} />
@@ -238,94 +214,71 @@ function Road() {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]} receiveShadow>
-        <planeGeometry args={[24, 42]} />
+        <planeGeometry args={[18, 42]} />
         <meshStandardMaterial color="#020617" roughness={0.95} />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.6, -0.015, 0]} receiveShadow>
-        <planeGeometry args={[5.0, 36]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, 0]} receiveShadow>
+        <planeGeometry args={[6.2, 36]} />
         <meshStandardMaterial color="#172033" roughness={0.9} />
       </mesh>
 
       {Array.from({ length: 15 }).map((_, index) => (
-        <mesh key={index} position={[-0.6, 0.01, -17 + index * 2.45]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh key={index} position={[0, 0.01, -17 + index * 2.45]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[0.14, 1.0]} />
           <meshStandardMaterial color="#e2e8f0" roughness={0.45} />
         </mesh>
       ))}
 
-      <mesh position={[3.2, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.16, 36]} />
+      <mesh position={[-3.2, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.13, 36]} />
         <meshStandardMaterial color="#facc15" roughness={0.5} />
       </mesh>
 
-      <mesh position={[6.15, 0.0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[5.2, 35]} />
-        <meshStandardMaterial color="#111827" roughness={0.92} />
+      <mesh position={[3.2, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.13, 36]} />
+        <meshStandardMaterial color="#facc15" roughness={0.5} />
       </mesh>
 
-      <Html position={[-1.2, 0.08, -16.5]} transform rotation={[-Math.PI / 2, 0, 0]} distanceFactor={12}>
+      <Html position={[0, 0.15, -17.6]} center>
         <div className="track-marker">START</div>
       </Html>
 
-      <Html position={[-1.2, 0.08, 16.5]} transform rotation={[-Math.PI / 2, 0, 0]} distanceFactor={12}>
+      <Html position={[0, 0.15, 17.4]} center>
         <div className="track-marker">FINISH</div>
       </Html>
     </group>
   );
 }
 
-function GarageBackWall() {
+function Gate({ section, z, isActive, isPassed, onSelect }) {
+  const accent = section.accent;
+
   return (
-    <group position={[8.8, 0, 0]}>
-      <mesh position={[0, 1.7, 0]} receiveShadow>
-        <boxGeometry args={[0.28, 3.4, 34]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.65} />
+    <group position={[0, 0, z]}>
+      <mesh position={[-3.25, 1.35, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.22, 2.7, 0.22]} />
+        <meshStandardMaterial color={isPassed ? accent : "#64748b"} roughness={0.5} />
       </mesh>
 
-      {PIT_POSITIONS.map((pos, index) => (
-        <mesh key={index} position={[-0.18, 1.72, pos.z]} receiveShadow>
-          <boxGeometry args={[0.18, 2.55, 4.1]} />
-          <meshStandardMaterial color={index % 2 === 0 ? "#1e293b" : "#111827"} roughness={0.62} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function PitStop({ section, position, isActive, onSelect }) {
-  return (
-    <group position={[position.x, 0, position.z]}>
-      <mesh
-        position={[0, 0.035, 0]}
-        onClick={(event) => {
-          event.stopPropagation();
-          onSelect(section);
-        }}
-        receiveShadow
-      >
-        <boxGeometry args={[4.1, 0.08, 4.45]} />
-        <meshStandardMaterial color={isActive ? section.accent : "#334155"} roughness={0.68} metalness={0.05} />
+      <mesh position={[3.25, 1.35, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.22, 2.7, 0.22]} />
+        <meshStandardMaterial color={isPassed ? accent : "#64748b"} roughness={0.5} />
       </mesh>
 
-      <mesh position={[1.95, 0.85, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.16, 1.65, 4.45]} />
-        <meshStandardMaterial color="#64748b" />
+      <mesh position={[0, 2.72, 0]} castShadow receiveShadow>
+        <boxGeometry args={[6.72, 0.28, 0.28]} />
+        <meshStandardMaterial color={isActive ? accent : "#0f172a"} roughness={0.4} emissive={isActive ? accent : "#000000"} emissiveIntensity={isActive ? 0.25 : 0} />
       </mesh>
 
-      <mesh position={[0.0, 2.15, -1.86]} castShadow receiveShadow>
-        <boxGeometry args={[3.9, 1.08, 0.18]} />
-        <meshStandardMaterial color="#020617" roughness={0.45} />
+      <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[6.9, 0.2]} />
+        <meshStandardMaterial color={accent} transparent opacity={isPassed ? 0.95 : 0.45} />
       </mesh>
 
-      <mesh position={[0, 0.08, -1.9]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[3.35, 0.15]} />
-        <meshStandardMaterial color="#f8fafc" roughness={0.5} />
-      </mesh>
-
-      <Html position={[0, 2.18, -2.0]} transform distanceFactor={8} occlude>
-        <button className={`pit-label ${isActive ? "active" : ""}`} style={{ "--accent": section.accent }} onClick={() => onSelect(section)}>
-          <span>{section.pit}</span>
+      <Html position={[0, 3.22, 0]} center>
+        <button className={`gate-label ${isActive ? "active" : ""} ${isPassed ? "passed" : ""}`} style={{ "--accent": accent }} onClick={() => onSelect(section)}>
+          <span>{section.gate}</span>
           <strong>{section.label}</strong>
         </button>
       </Html>
@@ -333,42 +286,9 @@ function PitStop({ section, position, isActive, onSelect }) {
   );
 }
 
-function AutoPitCar({ section, pitPosition, offset, onArrive }) {
-  const carRef = useRef();
-  const arrivedRef = useRef(false);
-
-  useFrame(({ clock }) => {
-    const t = (clock.elapsedTime * 0.052 + offset) % 1;
-    const z = THREE.MathUtils.lerp(-18, 18, t);
-    const dist = Math.abs(z - pitPosition.z);
-    const pitBlend = Math.max(0, 1 - dist / 2.95);
-    const x = THREE.MathUtils.lerp(-1.15, pitPosition.x - 0.8, pitBlend);
-
-    if (carRef.current) {
-      carRef.current.position.set(x, 0.02, z);
-      carRef.current.rotation.y = pitBlend > 0.22 ? Math.PI / 2 : 0;
-    }
-
-    if (pitBlend > 0.92 && !arrivedRef.current) {
-      arrivedRef.current = true;
-      onArrive(section);
-    }
-
-    if (pitBlend < 0.25) {
-      arrivedRef.current = false;
-    }
-  });
-
-  return (
-    <group ref={carRef}>
-      <Car type={section.carType} accent={section.accent} scale={0.95} />
-    </group>
-  );
-}
-
-function PlayerCar({ pitStops, onSelect, carRef, playerModel }) {
+function PlayerCar({ onGatePassed, carRef, playerModel }) {
   const keys = useRef({});
-  const lastSelected = useRef(null);
+  const passedIds = useRef(new Set());
 
   useEffect(() => {
     const down = (event) => {
@@ -391,11 +311,10 @@ function PlayerCar({ pitStops, onSelect, carRef, playerModel }) {
     const car = carRef.current;
     if (!car) return;
 
-    const speed = 6.1;
+    const speed = 6.4;
     let dx = 0;
     let dz = 0;
 
-    // Chronological forward direction is +Z.
     if (keys.current["w"] || keys.current["arrowup"]) dz += 1;
     if (keys.current["s"] || keys.current["arrowdown"]) dz -= 1;
     if (keys.current["a"] || keys.current["arrowleft"]) dx -= 1;
@@ -406,24 +325,27 @@ function PlayerCar({ pitStops, onSelect, carRef, playerModel }) {
       dx /= length;
       dz /= length;
 
-      car.position.x = THREE.MathUtils.clamp(car.position.x + dx * speed * delta, -3.4, 7.0);
-      car.position.z = THREE.MathUtils.clamp(car.position.z + dz * speed * delta, -17.2, 17.2);
+      car.position.x = THREE.MathUtils.clamp(car.position.x + dx * speed * delta, -2.55, 2.55);
+      car.position.z = THREE.MathUtils.clamp(car.position.z + dz * speed * delta, -18.0, 18.0);
       car.rotation.y = Math.atan2(dx, dz);
     }
 
-    for (const item of pitStops) {
-      const dist = Math.hypot(car.position.x - item.position.x, car.position.z - item.position.z);
-      if (dist < 1.95 && lastSelected.current !== item.section.id) {
-        lastSelected.current = item.section.id;
-        onSelect(item.section);
+    CV_SECTIONS.forEach((section, index) => {
+      const gateZ = GATE_Z[index];
+      const nearGate = Math.abs(car.position.z - gateZ) < 0.38;
+      const insideRoad = Math.abs(car.position.x) < 3.0;
+
+      if (nearGate && insideRoad && !passedIds.current.has(section.id)) {
+        passedIds.current.add(section.id);
+        onGatePassed(section);
       }
-    }
+    });
   });
 
   return (
-    <group ref={carRef} position={[-1.15, 0.02, -16]}>
-      <Car type={playerModel} accent="#f8fafc" scale={1.05} />
-      <Html position={[0, 1.6, 0]} transform distanceFactor={9}>
+    <group ref={carRef} position={[0, 0.02, -17]}>
+      <Car type={playerModel} accent="#f8fafc" scale={1.1} />
+      <Html position={[0, 1.65, 0]} center>
         <div className="player-tag">YOU</div>
       </Html>
     </group>
@@ -439,106 +361,103 @@ function CameraRig({ targetRef }) {
     const target = targetRef.current;
     if (!target) return;
 
-    // Camera behind the player while moving chronologically forward in +Z.
-    desired.set(target.position.x + 8.8, 7.4, target.position.z - 9.6);
-    camera.position.lerp(desired, 0.055);
+    desired.set(target.position.x + 6.7, 6.1, target.position.z - 8.7);
+    camera.position.lerp(desired, 0.065);
 
-    lookAt.set(target.position.x + 1.25, 0.6, target.position.z + 1.4);
+    lookAt.set(target.position.x, 0.75, target.position.z + 2.25);
     camera.lookAt(lookAt);
   });
 
   return null;
 }
 
-function Scene({ activeId, onSelect, playerModel }) {
+function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
   const playerRef = useRef();
-
-  const pitStops = CV_SECTIONS.map((section, index) => ({
-    section,
-    position: PIT_POSITIONS[index],
-  }));
 
   return (
     <>
       <color attach="background" args={["#020617"]} />
-      <fog attach="fog" args={["#020617", 16, 50]} />
+      <fog attach="fog" args={["#020617", 16, 48]} />
 
-      <ambientLight intensity={0.65} />
-      <directionalLight position={[9, 12, 8]} intensity={2.8} castShadow shadow-mapSize={[2048, 2048]} />
-      <pointLight position={[6, 3.5, -12]} intensity={3} color="#38bdf8" />
-      <pointLight position={[6, 3.5, 0]} intensity={2.4} color="#a78bfa" />
-      <pointLight position={[6, 3.5, 12]} intensity={2.4} color="#f97316" />
+      <ambientLight intensity={0.68} />
+      <directionalLight position={[8, 12, 6]} intensity={2.8} castShadow shadow-mapSize={[2048, 2048]} />
+      <pointLight position={[0, 4, -12]} intensity={2.4} color="#38bdf8" />
+      <pointLight position={[0, 4, 0]} intensity={2.2} color="#a78bfa" />
+      <pointLight position={[0, 4, 12]} intensity={2.3} color="#f97316" />
 
       <Environment preset="city" />
-      <Stars radius={75} depth={50} count={2000} factor={3.2} fade speed={0.35} />
+      <Stars radius={75} depth={50} count={1600} factor={3.2} fade speed={0.35} />
 
       <Road />
-      <GarageBackWall />
 
-      {pitStops.map((item) => (
-        <PitStop
-          key={item.section.id}
-          section={item.section}
-          position={item.position}
-          isActive={activeId === item.section.id}
+      {CV_SECTIONS.map((section, index) => (
+        <Gate
+          key={section.id}
+          section={section}
+          z={GATE_Z[index]}
+          isActive={activeId === section.id}
+          isPassed={passedIds.includes(section.id)}
           onSelect={onSelect}
         />
       ))}
 
-      {pitStops.map((item, index) => (
-        <AutoPitCar
-          key={`auto-${item.section.id}`}
-          section={item.section}
-          pitPosition={item.position}
-          offset={index * 0.18}
-          onArrive={onSelect}
-        />
-      ))}
-
-      <PlayerCar pitStops={pitStops} onSelect={onSelect} carRef={playerRef} playerModel={playerModel} />
+      <PlayerCar onGatePassed={onGatePassed} carRef={playerRef} playerModel={playerModel} />
       <CameraRig targetRef={playerRef} />
 
-      <ContactShadows opacity={0.5} scale={30} blur={2.8} far={12} position={[0, 0.02, 0]} />
+      <ContactShadows opacity={0.5} scale={24} blur={2.8} far={10} position={[0, 0.02, 0]} />
       <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} />
     </>
   );
 }
 
-function CvPanel({ activeSection, onSelect }) {
+function CvPanel({ activeSection, passedIds, onSelect }) {
   return (
     <aside className="cv-panel">
       <div className="panel-header">
         <div>
           <p className="eyebrow">Daniel Zabarsky</p>
-          <h1>3D Pit Lane CV</h1>
+          <h1>3D Gate CV</h1>
         </div>
-        <span className="status">LIVE</span>
+        <span className="status">{passedIds.length}/5</span>
       </div>
 
-      <div className="active-card" style={{ "--accent": activeSection.accent }}>
-        <p className="pit-name">{activeSection.pit}</p>
-        <h2>{activeSection.title}</h2>
-        <p className="period">{activeSection.period}</p>
+      {!activeSection ? (
+        <div className="empty-card">
+          <p className="pit-name">Ready</p>
+          <h2>Drive through Gate 01 to reveal the first CV section.</h2>
+          <p className="period">Use WASD or arrow keys.</p>
+        </div>
+      ) : (
+        <div className="active-card" style={{ "--accent": activeSection.accent }}>
+          <p className="pit-name">{activeSection.gate}</p>
+          <h2>{activeSection.title}</h2>
+          <p className="period">{activeSection.period}</p>
 
-        <ul>
-          {activeSection.bullets.map((bullet) => (
-            <li key={bullet}>{bullet}</li>
-          ))}
-        </ul>
-      </div>
+          <ul>
+            {activeSection.bullets.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="section-buttons">
-        {CV_SECTIONS.map((section) => (
-          <button
-            key={section.id}
-            className={section.id === activeSection.id ? "selected" : ""}
-            onClick={() => onSelect(section)}
-            style={{ "--accent": section.accent }}
-          >
-            <span>{section.pit}</span>
-            {section.label}
-          </button>
-        ))}
+        {CV_SECTIONS.map((section) => {
+          const isUnlocked = passedIds.includes(section.id);
+          return (
+            <button
+              key={section.id}
+              className={`${activeSection?.id === section.id ? "selected" : ""} ${!isUnlocked ? "locked" : ""}`}
+              onClick={() => isUnlocked && onSelect(section)}
+              style={{ "--accent": section.accent }}
+              disabled={!isUnlocked}
+            >
+              <span>{section.gate}</span>
+              {section.label}
+              {!isUnlocked && <em>locked</em>}
+            </button>
+          );
+        })}
       </div>
 
       <div className="contact-box">
@@ -552,12 +471,12 @@ function CvPanel({ activeSection, onSelect }) {
 
 function CarSelectOverlay({ selectedCar, setSelectedCar, onStart }) {
   return (
-    <div className="intro">
-      <div className="intro-card wide">
+    <div className="select-screen">
+      <div className="select-card">
         <p className="eyebrow">Interactive CV concept</p>
-        <h2>Select your car before entering the pit lane.</h2>
-        <p>
-          Drive chronologically through the CV: Stratasys, BGRaicing, Education, Skills, and Military Service.
+        <h2>Select your car</h2>
+        <p className="select-subtitle">
+          Then drive through the gates in chronological order. Each gate unlocks a CV section on the right side.
         </p>
 
         <div className="car-select-grid">
@@ -582,30 +501,48 @@ function CarSelectOverlay({ selectedCar, setSelectedCar, onStart }) {
 }
 
 export default function App() {
-  const [activeSection, setActiveSection] = useState(CV_SECTIONS[0]);
+  const [activeSection, setActiveSection] = useState(null);
+  const [passedIds, setPassedIds] = useState([]);
   const [selectedCar, setSelectedCar] = useState(PLAYER_CARS[0]);
-  const [isIntroOpen, setIsIntroOpen] = useState(true);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  const handleGatePassed = (section) => {
+    setActiveSection(section);
+    setPassedIds((current) => current.includes(section.id) ? current : [...current, section.id]);
+  };
 
   return (
     <main className="app">
-      <Canvas shadows camera={{ position: [8, 7, -22], fov: 48 }}>
-        <Suspense fallback={null}>
-          <Scene activeId={activeSection.id} onSelect={setActiveSection} playerModel={selectedCar.model} />
-        </Suspense>
-      </Canvas>
+      {hasStarted && (
+        <Canvas shadows camera={{ position: [6.5, 6, -25], fov: 50 }}>
+          <Suspense fallback={null}>
+            <Scene
+              activeId={activeSection?.id}
+              passedIds={passedIds}
+              onGatePassed={handleGatePassed}
+              onSelect={setActiveSection}
+              playerModel={selectedCar.model}
+            />
+          </Suspense>
+        </Canvas>
+      )}
 
-      <CvPanel activeSection={activeSection} onSelect={setActiveSection} />
+      {hasStarted && (
+        <>
+          <CvPanel activeSection={activeSection} passedIds={passedIds} onSelect={setActiveSection} />
 
-      <div className="hud">
-        <strong>Drive:</strong> WASD / Arrow keys
-        <span>Start at the beginning of the timeline and enter pits in chronological order.</span>
-      </div>
+          <div className="hud">
+            <strong>Drive:</strong> WASD / Arrow keys
+            <span>Pass each gate to unlock the next CV section.</span>
+          </div>
+        </>
+      )}
 
-      {isIntroOpen && (
+      {!hasStarted && (
         <CarSelectOverlay
           selectedCar={selectedCar}
           setSelectedCar={setSelectedCar}
-          onStart={() => setIsIntroOpen(false)}
+          onStart={() => setHasStarted(true)}
         />
       )}
     </main>

@@ -1,7 +1,7 @@
 {
-  "name": "daniel-3d-pit-lane-cv-v2",
+  "name": "daniel-3d-gate-cv",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
