@@ -1,3 +1,4 @@
+
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Html, Text } from "@react-three/drei";
@@ -8,7 +9,7 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 const INTRO_PARAGRAPH =
   "I see myself as a motivated and hands-on person who enjoys understanding how things work in real life, not only in theory. I’m curious, practical, and I like solving problems by combining engineering thinking with actual testing and building. I enjoy working with physical systems, learning new technologies, and taking responsibility when something needs to move forward. I’m looking for a place where I can grow as a mechanical engineer, contribute to real product development, and be part of a team that works on challenging and meaningful technology.";
 
-const VERSION_LABEL = "v8.5 CLEAN GENERATED TRACK";
+const VERSION_LABEL = "v8.6 ROAD + BETTER DRIVE";
 
 const MODEL_PATHS = {
   car: "./models/Car.fbx",
@@ -87,11 +88,9 @@ const CV_SECTIONS = [
   },
 ];
 
-// Long, smooth S-shaped track. This keeps the good v8 driving length/curves,
-// but removes the heavy uploaded Track.fbx graphics.
 const TRACK_WIDTH = 7.6;
-const SHOULDER_WIDTH = 10.4;
-const LANE_LIMIT = 2.75;
+const SHOULDER_WIDTH = 10.8;
+const START_T = 0.03;
 const CURVE_POINTS = [
   new THREE.Vector3(20, 0, 82),
   new THREE.Vector3(16, 0, 62),
@@ -105,8 +104,6 @@ const CURVE_POINTS = [
   new THREE.Vector3(12, 0, -80),
 ];
 const GATE_T = [0.12, 0.30, 0.48, 0.68, 0.86];
-const START_T = 0.03;
-
 const centerlineCurve = new THREE.CatmullRomCurve3(CURVE_POINTS, false, "catmullrom", 0.45);
 
 function getTrackData(t) {
@@ -116,6 +113,26 @@ function getTrackData(t) {
   const tangent = new THREE.Vector3(tangent3.x, 0, tangent3.z).normalize();
   const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
   return { point, tangent, normal };
+}
+
+function getNearestTrackData(position) {
+  let bestT = 0;
+  let bestDist = Infinity;
+  let bestPoint = null;
+
+  for (let i = 0; i <= 300; i++) {
+    const t = i / 300;
+    const point = centerlineCurve.getPointAt(t);
+    const dist = point.distanceToSquared(position);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestT = t;
+      bestPoint = point;
+    }
+  }
+
+  const { tangent, normal } = getTrackData(bestT);
+  return { t: bestT, point: bestPoint, tangent, normal, distance: Math.sqrt(bestDist) };
 }
 
 function applyMeshSettings(root) {
@@ -154,7 +171,6 @@ function prepareFbxScene(fbx, targetSize = 2.4) {
 
   const largest = Math.max(size.x, size.y, size.z) || 1;
   root.scale.setScalar(targetSize / largest);
-  root.rotation.y = 0;
   root.animations = fbx.animations || [];
   return root;
 }
@@ -171,7 +187,6 @@ function FbxCar({ type = "carStylized", scale = 1, ...props }) {
 
   useEffect(() => {
     if (!instance.animations || instance.animations.length === 0) return;
-
     const mixer = new THREE.AnimationMixer(instance);
     mixerRef.current = mixer;
     instance.animations.forEach((clip) => mixer.clipAction(clip).reset().play());
@@ -222,95 +237,58 @@ function Car({ type, accent, ...props }) {
   );
 }
 
-function makeRibbonGeometry(width) {
-  const segments = 280;
-  const positions = [];
-  const uvs = [];
-  const indices = [];
-
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments;
-    const { point, normal } = getTrackData(t);
-    const left = point.clone().add(normal.clone().multiplyScalar(-width / 2));
-    const right = point.clone().add(normal.clone().multiplyScalar(width / 2));
-
-    positions.push(left.x, 0, left.z, right.x, 0, right.z);
-    uvs.push(0, t * 34, 1, t * 34);
-  }
-
-  for (let i = 0; i < segments; i++) {
-    const a = i * 2;
-    const b = a + 1;
-    const c = a + 2;
-    const d = a + 3;
-    indices.push(a, c, b, c, d, b);
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setIndex(indices);
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
-function Ribbon({ width, color, y = 0, roughness = 0.9 }) {
-  const geometry = useMemo(() => makeRibbonGeometry(width), [width]);
-  return (
-    <mesh geometry={geometry} position={[0, y, 0]} receiveShadow>
-      <meshStandardMaterial color={color} roughness={roughness} />
-    </mesh>
-  );
-}
-
-function RoadMarkings() {
-  const centerDashes = [];
-  for (let t = 0.03; t <= 0.97; t += 0.022) {
-    const { point, tangent } = getTrackData(t);
-    const angle = Math.atan2(tangent.x, tangent.z);
-    centerDashes.push(
-      <mesh key={`c-${t}`} position={[point.x, 0.028, point.z]} rotation={[-Math.PI / 2, angle, 0]}>
-        <planeGeometry args={[0.16, 1.18]} />
-        <meshStandardMaterial color="#e5e7eb" roughness={0.42} />
-      </mesh>
-    );
-  }
-
-  const sideMarks = [];
-  for (let t = 0.01; t <= 0.99; t += 0.014) {
-    const { point, tangent, normal } = getTrackData(t);
-    const angle = Math.atan2(tangent.x, tangent.z);
-    const left = point.clone().add(normal.clone().multiplyScalar(-TRACK_WIDTH / 2 + 0.14));
-    const right = point.clone().add(normal.clone().multiplyScalar(TRACK_WIDTH / 2 - 0.14));
-
-    sideMarks.push(
-      <mesh key={`l-${t}`} position={[left.x, 0.03, left.z]} rotation={[-Math.PI / 2, angle, 0]}>
-        <planeGeometry args={[0.13, 1.32]} />
-        <meshStandardMaterial color="#f1df74" roughness={0.45} />
-      </mesh>
-    );
-    sideMarks.push(
-      <mesh key={`r-${t}`} position={[right.x, 0.03, right.z]} rotation={[-Math.PI / 2, angle, 0]}>
-        <planeGeometry args={[0.13, 1.32]} />
-        <meshStandardMaterial color="#f1df74" roughness={0.45} />
-      </mesh>
-    );
-  }
-
-  return <group>{centerDashes}{sideMarks}</group>;
-}
-
 function Road() {
+  const segments = useMemo(() => {
+    const items = [];
+    const count = 120;
+    for (let i = 0; i < count; i++) {
+      const t1 = i / count;
+      const t2 = (i + 1) / count;
+      const p1 = centerlineCurve.getPointAt(t1);
+      const p2 = centerlineCurve.getPointAt(t2);
+      const mid = p1.clone().lerp(p2, 0.5);
+      const diff = p2.clone().sub(p1);
+      const length = diff.length();
+      const angle = Math.atan2(diff.x, diff.z);
+      items.push({ mid, length, angle, index: i });
+    }
+    return items;
+  }, []);
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
         <planeGeometry args={[260, 260]} />
-        <meshStandardMaterial color="#8fd16a" roughness={1} />
+        <meshStandardMaterial color="#a8cb8f" roughness={1} />
       </mesh>
 
-      <Ribbon width={SHOULDER_WIDTH} color="#64748b" y={-0.012} roughness={0.95} />
-      <Ribbon width={TRACK_WIDTH} color="#111827" y={0} roughness={0.9} />
-      <RoadMarkings />
+      {segments.map((seg) => (
+        <group key={seg.index} position={[seg.mid.x, 0, seg.mid.z]} rotation={[0, seg.angle, 0]}>
+          <mesh position={[0, -0.025, 0]} receiveShadow>
+            <boxGeometry args={[SHOULDER_WIDTH, 0.05, seg.length + 0.35]} />
+            <meshStandardMaterial color="#526071" roughness={0.98} />
+          </mesh>
+          <mesh position={[0, 0, 0]} receiveShadow>
+            <boxGeometry args={[TRACK_WIDTH, 0.04, seg.length + 0.08]} />
+            <meshStandardMaterial color="#1f2937" roughness={0.92} />
+          </mesh>
+
+          <mesh position={[0, 0.025, 0]} receiveShadow>
+            <boxGeometry args={[0.16, 0.01, seg.length * 0.45]} />
+            <meshStandardMaterial color="#f8fafc" roughness={0.4} />
+          </mesh>
+
+          <mesh position={[-TRACK_WIDTH / 2 + 0.18, 0.026, 0]} receiveShadow>
+            <boxGeometry args={[0.12, 0.01, seg.length + 0.1]} />
+            <meshStandardMaterial color="#f1df74" roughness={0.45} />
+          </mesh>
+
+          <mesh position={[TRACK_WIDTH / 2 - 0.18, 0.026, 0]} receiveShadow>
+            <boxGeometry args={[0.12, 0.01, seg.length + 0.1]} />
+            <meshStandardMaterial color="#f1df74" roughness={0.45} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }
@@ -336,7 +314,7 @@ function Gate({ section, t, isActive, isPassed, onSelect }) {
   const accent = section.accent;
 
   return (
-    <group position={[point.x, 0, point.z]} rotation={[0, angle, 0]} onClick={() => onSelect(section)}>
+    <group position={[point.x, 0.03, point.z]} rotation={[0, angle, 0]} onClick={() => onSelect(section)}>
       <mesh position={[-TRACK_WIDTH / 2 + 0.35, 1.35, 0]} castShadow receiveShadow>
         <boxGeometry args={[0.24, 2.7, 0.24]} />
         <meshStandardMaterial color={isPassed ? accent : "#64748b"} roughness={0.5} />
@@ -361,8 +339,13 @@ function Gate({ section, t, isActive, isPassed, onSelect }) {
 function PlayerCar({ onGatePassed, playerModel, targetRef }) {
   const keys = useRef({});
   const carRef = useRef();
-  const carState = useRef({ progress: START_T, laneOffset: 0 });
-  const passedIds = useRef(new Set());
+  const gatePassedRef = useRef(new Set());
+  const startData = useMemo(() => getTrackData(START_T), []);
+  const carState = useRef({
+    position: startData.point.clone(),
+    heading: Math.atan2(startData.tangent.x, startData.tangent.z),
+    speed: 0,
+  });
 
   useEffect(() => {
     const down = (event) => { keys.current[event.key.toLowerCase()] = true; };
@@ -379,31 +362,42 @@ function PlayerCar({ onGatePassed, playerModel, targetRef }) {
     const car = carRef.current;
     if (!car) return;
 
-    let { progress, laneOffset } = carState.current;
-    const forward = (keys.current["w"] || keys.current["arrowup"]) ? 1 : 0;
-    const backward = (keys.current["s"] || keys.current["arrowdown"]) ? 1 : 0;
-    const left = (keys.current["a"] || keys.current["arrowleft"]) ? 1 : 0;
-    const right = (keys.current["d"] || keys.current["arrowright"]) ? 1 : 0;
+    const state = carState.current;
+    const forwardInput = (keys.current["w"] || keys.current["arrowup"] ? 1 : 0) - (keys.current["s"] || keys.current["arrowdown"] ? 1 : 0);
+    const turnInput = (keys.current["d"] || keys.current["arrowright"] ? 1 : 0) - (keys.current["a"] || keys.current["arrowleft"] ? 1 : 0);
 
-    progress += (forward - backward) * delta * 0.085;
-    laneOffset += (left - right) * delta * 2.8;
+    state.speed += forwardInput * delta * 14;
+    state.speed *= 0.985;
+    state.speed = THREE.MathUtils.clamp(state.speed, -6, 16);
 
-    progress = THREE.MathUtils.clamp(progress, 0.001, 0.999);
-    laneOffset = THREE.MathUtils.clamp(laneOffset, -LANE_LIMIT, LANE_LIMIT);
+    const turnStrength = THREE.MathUtils.clamp(Math.abs(state.speed) * 0.04 + 0.4, 0.4, 1.25);
+    state.heading -= turnInput * delta * turnStrength;
 
-    carState.current.progress = progress;
-    carState.current.laneOffset = laneOffset;
+    const forward = new THREE.Vector3(Math.sin(state.heading), 0, Math.cos(state.heading));
+    state.position.add(forward.multiplyScalar(state.speed * delta));
 
-    const { point, tangent, normal } = getTrackData(progress);
-    const pos = point.clone().add(normal.clone().multiplyScalar(laneOffset));
-    car.position.set(pos.x, 0.02, pos.z);
-    car.rotation.y = Math.atan2(tangent.x, tangent.z);
+    const nearest = getNearestTrackData(state.position);
+    const offsetVec = state.position.clone().sub(nearest.point);
+    const lateralOffset = THREE.MathUtils.clamp(offsetVec.dot(nearest.normal), -TRACK_WIDTH * 0.35, TRACK_WIDTH * 0.35);
+    const targetPosition = nearest.point.clone().add(nearest.normal.clone().multiplyScalar(lateralOffset));
 
+    const blend = nearest.distance > TRACK_WIDTH * 0.5 ? 0.12 : 0.04;
+    state.position.lerp(targetPosition, blend);
+
+    if (Math.abs(state.speed) > 0.05) {
+      const desiredHeading = Math.atan2(forward.x, forward.z);
+      state.heading = THREE.MathUtils.lerp(state.heading, desiredHeading, 0.15);
+    }
+
+    car.position.set(state.position.x, 0.02, state.position.z);
+    car.rotation.y = state.heading;
     if (targetRef) targetRef.current = car;
 
     CV_SECTIONS.forEach((section, index) => {
-      if (progress >= GATE_T[index] && !passedIds.current.has(section.id)) {
-        passedIds.current.add(section.id);
+      const gatePos = getTrackData(GATE_T[index]).point;
+      const gateDistance = gatePos.distanceTo(state.position);
+      if (gateDistance < 4.4 && !gatePassedRef.current.has(section.id)) {
+        gatePassedRef.current.add(section.id);
         onGatePassed(section);
       }
     });
@@ -426,10 +420,10 @@ function CameraRig({ targetRef }) {
     if (!target) return;
 
     const forward = new THREE.Vector3(0, 0, 1).applyEuler(target.rotation);
-    desired.copy(target.position).add(new THREE.Vector3(0, 5.8, 0)).add(forward.clone().multiplyScalar(-9));
-    camera.position.lerp(desired, 0.07);
+    desired.copy(target.position).add(new THREE.Vector3(0, 5.5, 0)).add(forward.clone().multiplyScalar(-9));
+    camera.position.lerp(desired, 0.08);
 
-    lookAt.copy(target.position).add(forward.clone().multiplyScalar(4)).add(new THREE.Vector3(0, 1.0, 0));
+    lookAt.copy(target.position).add(forward.clone().multiplyScalar(5)).add(new THREE.Vector3(0, 1.2, 0));
     camera.lookAt(lookAt);
   });
 
@@ -443,7 +437,7 @@ function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
     <>
       <color attach="background" args={["#87CEEB"]} />
       <fog attach="fog" args={["#87CEEB", 90, 210]} />
-      <ambientLight intensity={1.1} />
+      <ambientLight intensity={1.15} />
       <directionalLight position={[14, 20, 8]} intensity={2.35} castShadow shadow-mapSize={[2048, 2048]} />
       <Environment preset="park" />
 
@@ -462,7 +456,7 @@ function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
 
       <PlayerCar onGatePassed={onGatePassed} playerModel={playerModel} targetRef={playerTargetRef} />
       <CameraRig targetRef={playerTargetRef} />
-      <ContactShadows opacity={0.45} scale={44} blur={2.8} far={20} position={[0, 0.02, 0]} />
+      <ContactShadows opacity={0.4} scale={38} blur={2.8} far={18} position={[0, 0.02, 0]} />
     </>
   );
 }
@@ -483,7 +477,7 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
         <div className="empty-card">
           <p className="pit-name">Ready</p>
           <h2>Drive through Gate 01 to reveal the first CV section.</h2>
-          <p className="period">Use W/S for forward/back and A/D for lane change.</p>
+          <p className="period">Use W/S to drive and A/D to steer.</p>
         </div>
       ) : (
         <div className="active-card" style={{ "--accent": activeSection.accent }}>
@@ -553,7 +547,7 @@ function LoadingOverlay() {
   return (
     <Html center>
       <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(2,6,23,0.82)", color: "white", fontWeight: 700 }}>
-        Loading v8.5 clean track…
+        Loading v8.6 road…
       </div>
     </Html>
   );
@@ -584,8 +578,8 @@ export default function App() {
         <>
           <CvPanel activeSection={activeSection} passedIds={passedIds} onSelect={setActiveSection} />
           <div className="hud">
-            <strong>Drive:</strong> W/S = forward/back, A/D = lane shift
-            <span>{VERSION_LABEL} — no uploaded trackpack graphics.</span>
+            <strong>Drive:</strong> W/S = forward/back, A/D = steer
+            <span>{VERSION_LABEL}</span>
           </div>
         </>
       )}
