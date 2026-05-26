@@ -1,16 +1,11 @@
-# Daniel Zabarsky – 3D Gate CV v8.8
-
-## Fix
-This version fixes the feeling of hitting the end of the playground near Skills.
+# Daniel Zabarsky – 3D CV
 
 ## Changes
-- Enlarged the ground/playground area significantly
-- Widened the road and shoulders
-- Extended the road farther beyond Skills and Military
-- Smoothed the curve after Education / Skills
-- Added more road segments with overlap to avoid gaps on curves
-- Kept stable path-locked driving
+- Removed the visible version number from the website
+- Renamed the interface from `3D Gate CV` to `3D CV`
+- Kept the current steering behavior
+- Kept the current road graphics and enlarged playground
 
 Controls:
 - W/S = forward/back
-- A/D = left/right inside the lane
+- A/D = steering

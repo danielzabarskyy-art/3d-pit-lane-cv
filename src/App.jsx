@@ -9,7 +9,6 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 const INTRO_PARAGRAPH =
   "I see myself as a motivated and hands-on person who enjoys understanding how things work in real life, not only in theory. I’m curious, practical, and I like solving problems by combining engineering thinking with actual testing and building. I enjoy working with physical systems, learning new technologies, and taking responsibility when something needs to move forward. I’m looking for a place where I can grow as a mechanical engineer, contribute to real product development, and be part of a team that works on challenging and meaningful technology.";
 
-const VERSION_LABEL = "v8.8 EXTENDED ROAD";
 
 const MODEL_PATHS = {
   car: "./models/Car.fbx",
@@ -340,7 +339,12 @@ function Gate({ section, t, isActive, isPassed, onSelect }) {
 function PlayerCar({ onGatePassed, playerModel, targetRef }) {
   const keys = useRef({});
   const carRef = useRef();
-  const carState = useRef({ progress: START_T, laneOffset: 0 });
+  const carState = useRef({
+    progress: START_T,
+    laneOffset: 0,
+    speed: 0,
+    visualSteer: 0,
+  });
   const passedIds = useRef(new Set());
 
   useEffect(() => {
@@ -358,38 +362,60 @@ function PlayerCar({ onGatePassed, playerModel, targetRef }) {
     const car = carRef.current;
     if (!car) return;
 
-    let { progress, laneOffset } = carState.current;
+    const state = carState.current;
 
-    const forward = (keys.current["w"] || keys.current["arrowup"]) ? 1 : 0;
-    const backward = (keys.current["s"] || keys.current["arrowdown"]) ? 1 : 0;
+    const forwardInput =
+      (keys.current["w"] || keys.current["arrowup"] ? 1 : 0) -
+      (keys.current["s"] || keys.current["arrowdown"] ? 1 : 0);
 
-    // A/D are intentionally lane movement, not free steering.
-    // This is much more stable on the curved track and prevents the car/camera
-    // from snapping near the Skills gate.
-    const left = (keys.current["a"] || keys.current["arrowleft"]) ? 1 : 0;
-    const right = (keys.current["d"] || keys.current["arrowright"]) ? 1 : 0;
+    // A/D are steering again.
+    const steeringInput =
+      (keys.current["d"] || keys.current["arrowright"] ? 1 : 0) -
+      (keys.current["a"] || keys.current["arrowleft"] ? 1 : 0);
 
-    progress += (forward - backward) * delta * 0.082;
-    laneOffset += (right - left) * delta * 3.2;
+    // Speed is stored as track-progress-per-second.
+    state.speed += forwardInput * delta * 0.13;
+    state.speed *= 0.965;
+    state.speed = THREE.MathUtils.clamp(state.speed, -0.055, 0.105);
 
-    progress = THREE.MathUtils.clamp(progress, 0.001, 0.999);
-    laneOffset = THREE.MathUtils.clamp(laneOffset, -TRACK_WIDTH * 0.38, TRACK_WIDTH * 0.38);
+    // Steering changes lateral position more when the car is moving faster.
+    const directionFactor = state.speed >= 0 ? 1 : -1;
+    const steeringPower = 1.05 + Math.abs(state.speed) * 30;
+    state.laneOffset += steeringInput * directionFactor * steeringPower * delta;
 
-    carState.current.progress = progress;
-    carState.current.laneOffset = laneOffset;
+    // Keep the car safely inside the road.
+    state.laneOffset = THREE.MathUtils.clamp(
+      state.laneOffset,
+      -TRACK_WIDTH * 0.36,
+      TRACK_WIDTH * 0.36
+    );
 
-    const { point, tangent, normal } = getTrackData(progress);
-    const pos = point.clone().add(normal.clone().multiplyScalar(laneOffset));
+    state.progress += state.speed * delta;
+    state.progress = THREE.MathUtils.clamp(state.progress, 0.001, 0.999);
+
+    // Small auto-centering so the car does not slowly drift forever.
+    if (steeringInput === 0) {
+      state.laneOffset *= Math.pow(0.985, delta * 60);
+    }
+
+    state.visualSteer = THREE.MathUtils.lerp(state.visualSteer, steeringInput, 0.18);
+
+    const { point, tangent, normal } = getTrackData(state.progress);
+    const pos = point.clone().add(normal.clone().multiplyScalar(state.laneOffset));
+
+    const roadHeading = Math.atan2(tangent.x, tangent.z);
+    const steeringVisualAngle = state.visualSteer * 0.34;
+    const laneVisualAngle = (state.laneOffset / TRACK_WIDTH) * 0.16;
 
     car.position.set(pos.x, 0.02, pos.z);
-    car.rotation.y = Math.atan2(tangent.x, tangent.z);
+    car.rotation.y = roadHeading + steeringVisualAngle + laneVisualAngle;
 
     if (targetRef) targetRef.current = car;
 
     CV_SECTIONS.forEach((section, index) => {
       const gateT = GATE_T[index];
 
-      if (progress >= gateT && !passedIds.current.has(section.id)) {
+      if (state.progress >= gateT && !passedIds.current.has(section.id)) {
         passedIds.current.add(section.id);
         onGatePassed(section);
       }
@@ -460,8 +486,7 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
       <div className="panel-header">
         <div>
           <p className="eyebrow">Daniel Zabarsky</p>
-          <h1>3D Gate CV</h1>
-          <small style={{ color: "#38bdf8", fontWeight: 800 }}>{VERSION_LABEL}</small>
+          <h1>3D CV</h1>
         </div>
         <span className="status">{passedIds.length}/5</span>
       </div>
@@ -470,7 +495,7 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
         <div className="empty-card">
           <p className="pit-name">Ready</p>
           <h2>Drive through Gate 01 to reveal the first CV section.</h2>
-          <p className="period">Use W/S to drive and A/D to move left/right inside the lane.</p>
+          <p className="period">Use W/S to drive and A/D to steer.</p>
         </div>
       ) : (
         <div className="active-card" style={{ "--accent": activeSection.accent }}>
@@ -540,7 +565,7 @@ function LoadingOverlay() {
   return (
     <Html center>
       <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(2,6,23,0.82)", color: "white", fontWeight: 700 }}>
-        Loading v8.8 extended road…
+        Loading…
       </div>
     </Html>
   );
@@ -571,8 +596,8 @@ export default function App() {
         <>
           <CvPanel activeSection={activeSection} passedIds={passedIds} onSelect={setActiveSection} />
           <div className="hud">
-            <strong>Drive:</strong> W/S = forward/back, A/D = left/right
-            <span>{VERSION_LABEL}</span>
+            <strong>Drive:</strong> W/S = forward/back, A/D = steering
+            <span>Drive through each section to unlock the CV.</span>
           </div>
         </>
       )}
