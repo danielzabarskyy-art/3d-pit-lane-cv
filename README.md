@@ -27,3 +27,9 @@ Settings → Pages → Source: GitHub Actions
 - Removed START / FINISH / YOU labels.
 - Changed the sky to blue and widened the ground significantly.
 - Swapped left/right movement controls.
+
+
+## v6 track update
+
+- Added visible curves to the track.
+- Made the track longer with more space between gates.
