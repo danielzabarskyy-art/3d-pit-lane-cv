@@ -45,3 +45,23 @@ Settings → Pages → Source: GitHub Actions
 ### Build reliability
 
 This version calls Vite directly through `node ./node_modules/vite/bin/vite.js` to avoid the broken `.bin/vite` wrapper issue.
+
+
+## v8 actual track asset test
+
+- Extracted and included the uploaded `track.zip` asset pack.
+- Loads `RaceTrackExport/Track.fbx` and `RaceTrackExport/Banners.fbx`.
+- Keeps a shared curved gameplay path for gates and car movement while rendering the actual track model.
+
+
+## v8.1 deployment patch
+
+This version fixes the previous GitHub Actions issue where `vite` was missing from `node_modules`.
+
+The workflow now:
+- removes stale `node_modules` and `package-lock.json`
+- installs all runtime/build dependencies explicitly
+- verifies Vite with `npx vite --version`
+- builds with `npx vite build`
+
+Important: make sure `.github/workflows/deploy.yml` is uploaded/replaced in GitHub.
