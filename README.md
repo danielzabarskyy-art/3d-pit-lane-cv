@@ -65,3 +65,14 @@ The workflow now:
 - builds with `npx vite build`
 
 Important: make sure `.github/workflows/deploy.yml` is uploaded/replaced in GitHub.
+
+
+## v8.2 small track file
+
+This version replaces the 53 MB `Track.fbx` with a reduced `Track_small.glb` file of about 21 MB, so every individual file is below GitHub browser upload limits.
+
+What changed:
+- Removed original `Track.fbx`.
+- Added `public/trackpack/RaceTrackExport/Track_small.glb`.
+- Updated the code to load the small GLB with `GLTFLoader`.
+- Kept `Banners.fbx` and banner images.

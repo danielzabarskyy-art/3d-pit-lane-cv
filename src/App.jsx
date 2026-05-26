@@ -1,8 +1,9 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { OrbitControls, ContactShadows, Environment, Text } from "@react-three/drei";
+import { ContactShadows, Environment, Html, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 const INTRO_PARAGRAPH =
@@ -17,6 +18,11 @@ const MODEL_PATHS = {
   taxiStylized: "./models/Taxi_stylized.fbx",
 };
 
+const TRACK_ASSETS = {
+  track: "./trackpack/RaceTrackExport/Track_small.glb",
+  banners: "./trackpack/RaceTrackExport/Banners.fbx",
+};
+
 const PLAYER_CARS = [
   { id: "police", label: "Police", model: "police", accent: "#60a5fa", description: "Clean, sharp, and professional." },
   { id: "taxi", label: "Taxi", model: "taxiStylized", accent: "#facc15", description: "Bold, visible, and fun." },
@@ -25,12 +31,8 @@ const PLAYER_CARS = [
 
 const CV_SECTIONS = [
   {
-    id: "stratasys",
-    label: "Stratasys",
-    gate: "Gate 01",
-    accent: "#38bdf8",
-    title: "Stratasys Ltd. – Mechanical Engineering Student",
-    period: "Feb 2025 – Present",
+    id: "stratasys", label: "Stratasys", gate: "Gate 01", accent: "#38bdf8",
+    title: "Stratasys Ltd. – Mechanical Engineering Student", period: "Feb 2025 – Present",
     bullets: [
       "Built a comprehensive understanding of engineering processes (ECR, ECO, DEV, MCO).",
       "Implemented and programmed a robotic arm, integrating control systems for automated operations.",
@@ -40,12 +42,8 @@ const CV_SECTIONS = [
     ],
   },
   {
-    id: "bgracing",
-    label: "BGRaicing",
-    gate: "Gate 02",
-    accent: "#facc15",
-    title: "BGRaicing – System Engineer",
-    period: "2024 – Present",
+    id: "bgracing", label: "BGRaicing", gate: "Gate 02", accent: "#facc15",
+    title: "BGRaicing – System Engineer", period: "2024 – Present",
     bullets: [
       "Hands-on experience in a Formula Student project, encompassing end-to-end vehicle development from planning and design to production.",
       "Led integration between mechanical and electrical systems to ensure seamless functionality.",
@@ -54,30 +52,18 @@ const CV_SECTIONS = [
     ],
   },
   {
-    id: "education",
-    label: "Education",
-    gate: "Gate 03",
-    accent: "#a78bfa",
-    title: "B.Sc. Mechanical Engineering – Ben-Gurion University",
-    period: "2023 – Present | Expected Graduation: 2026 | GPA: 81",
+    id: "education", label: "Education", gate: "Gate 03", accent: "#a78bfa",
+    title: "B.Sc. Mechanical Engineering – Ben-Gurion University", period: "2023 – Present | Expected Graduation: 2026 | GPA: 81",
     bullets: ["Mechanical Engineering student at Ben-Gurion University."],
   },
   {
-    id: "skills",
-    label: "Skills",
-    gate: "Gate 04",
-    accent: "#22c55e",
-    title: "Skills",
-    period: "Technical stack",
+    id: "skills", label: "Skills", gate: "Gate 04", accent: "#22c55e",
+    title: "Skills", period: "Technical stack",
     bullets: ["SolidWorks", "C", "MATLAB", "Agile PLM", "EPDM", "Oracle", "Microsoft Office"],
   },
   {
-    id: "military",
-    label: "Military",
-    gate: "Gate 05",
-    accent: "#f97316",
-    title: "Combat Officer, Battalion 601 – Combat Engineering Corps",
-    period: "2015 – 2020",
+    id: "military", label: "Military", gate: "Gate 05", accent: "#f97316",
+    title: "Combat Officer, Battalion 601 – Combat Engineering Corps", period: "2015 – 2020",
     bullets: [
       "Led detailed planning and execution of activities and arrests.",
       "Distinguished of specialized courses including Class Commanders, Senior Sergent, Officers (with excellence), and Commando training.",
@@ -85,25 +71,23 @@ const CV_SECTIONS = [
   },
 ];
 
-const TRACK_WIDTH = 7.2;
-const SHOULDER_WIDTH = 9.8;
-const LANE_LIMIT = 2.45;
+const TRACK_WIDTH = 8.0;
+const LANE_LIMIT = 2.7;
 const CURVE_POINTS = [
-  new THREE.Vector3(0, 0, -72),
-  new THREE.Vector3(7, 0, -58),
-  new THREE.Vector3(16, 0, -44),
-  new THREE.Vector3(10, 0, -28),
-  new THREE.Vector3(-4, 0, -10),
-  new THREE.Vector3(-16, 0, 8),
-  new THREE.Vector3(-6, 0, 26),
-  new THREE.Vector3(10, 0, 46),
-  new THREE.Vector3(17, 0, 64),
-  new THREE.Vector3(8, 0, 80),
+  new THREE.Vector3(20, 0, 82),
+  new THREE.Vector3(16, 0, 62),
+  new THREE.Vector3(8, 0, 42),
+  new THREE.Vector3(-6, 0, 22),
+  new THREE.Vector3(-18, 0, 4),
+  new THREE.Vector3(-24, 0, -14),
+  new THREE.Vector3(-18, 0, -34),
+  new THREE.Vector3(-6, 0, -52),
+  new THREE.Vector3(6, 0, -66),
+  new THREE.Vector3(12, 0, -80),
 ];
-const GATE_T = [0.16, 0.33, 0.5, 0.68, 0.84];
-const START_T = 0.04;
-
-const centerlineCurve = new THREE.CatmullRomCurve3(CURVE_POINTS, false, "catmullrom", 0.5);
+const GATE_T = [0.12, 0.30, 0.48, 0.68, 0.86];
+const START_T = 0.03;
+const centerlineCurve = new THREE.CatmullRomCurve3(CURVE_POINTS, false, "catmullrom", 0.45);
 
 function getTrackData(t) {
   const clamped = THREE.MathUtils.clamp(t, 0, 1);
@@ -114,11 +98,8 @@ function getTrackData(t) {
   return { point, tangent, normal };
 }
 
-function prepareFbxScene(fbx, targetSize = 2.4) {
-  const model = clone(fbx);
-  const root = new THREE.Group();
-
-  model.traverse((child) => {
+function applyMeshSettings(root) {
+  root.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
@@ -129,14 +110,18 @@ function prepareFbxScene(fbx, targetSize = 2.4) {
           material.transparent = false;
           material.opacity = 1;
           material.side = THREE.DoubleSide;
-          if ("roughness" in material) material.roughness = 0.45;
-          if ("metalness" in material) material.metalness = 0.08;
           material.needsUpdate = true;
+          if ("roughness" in material && material.roughness == null) material.roughness = 0.7;
         });
       }
     }
   });
+}
 
+function prepareFbxScene(fbx, targetSize = 2.4) {
+  const model = clone(fbx);
+  const root = new THREE.Group();
+  applyMeshSettings(model);
   const box = new THREE.Box3().setFromObject(model);
   const size = new THREE.Vector3();
   const center = new THREE.Vector3();
@@ -194,9 +179,7 @@ function FallbackCar({ color = "#38bdf8", scale = 1, ...props }) {
         <boxGeometry args={[0.9, 0.45, 0.95]} />
         <meshStandardMaterial color="#0f172a" roughness={0.35} metalness={0.2} />
       </mesh>
-      {[
-        [-0.78, 0.2, 0.72], [0.78, 0.2, 0.72], [-0.78, 0.2, -0.72], [0.78, 0.2, -0.72],
-      ].map((pos, index) => (
+      {[[-0.78, 0.2, 0.72], [0.78, 0.2, 0.72], [-0.78, 0.2, -0.72], [0.78, 0.2, -0.72]].map((pos, index) => (
         <mesh key={index} position={pos} rotation={[0, 0, Math.PI / 2]} castShadow>
           <cylinderGeometry args={[0.25, 0.25, 0.22, 24]} />
           <meshStandardMaterial color="#020617" roughness={0.6} />
@@ -214,93 +197,49 @@ function Car({ type, accent, ...props }) {
   );
 }
 
-function makeRibbonGeometry(width) {
-  const segments = 260;
-  const positions = [];
-  const uvs = [];
-  const indices = [];
+function useTrackPack() {
+  const trackGlb = useLoader(GLTFLoader, TRACK_ASSETS.track);
+  const banners = useLoader(FBXLoader, TRACK_ASSETS.banners);
 
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments;
-    const { point, normal } = getTrackData(t);
-    const left = point.clone().add(normal.clone().multiplyScalar(-width / 2));
-    const right = point.clone().add(normal.clone().multiplyScalar(width / 2));
-    positions.push(left.x, 0, left.z, right.x, 0, right.z);
-    uvs.push(0, t * 30, 1, t * 30);
-  }
+  return useMemo(() => {
+    const trackClone = clone(trackGlb.scene);
+    const bannersClone = clone(banners);
+    applyMeshSettings(trackClone);
+    applyMeshSettings(bannersClone);
 
-  for (let i = 0; i < segments; i++) {
-    const a = i * 2;
-    const b = a + 1;
-    const c = a + 2;
-    const d = a + 3;
-    indices.push(a, c, b, c, d, b);
-  }
+    const raw = new THREE.Group();
+    raw.add(trackClone);
+    raw.add(bannersClone);
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setIndex(indices);
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.computeVertexNormals();
-  return geometry;
+    const container = new THREE.Group();
+    container.add(raw);
+
+    const box = new THREE.Box3().setFromObject(raw);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    raw.position.set(-center.x, -box.min.y, -center.z);
+    const longest = Math.max(size.x, size.z) || 1;
+    container.scale.setScalar(170 / longest);
+    container.rotation.y = Math.PI;
+    return container;
+  }, [trackGlb, banners]);
 }
 
-function Ribbon({ width, color, y = 0, roughness = 0.9 }) {
-  const geometry = useMemo(() => makeRibbonGeometry(width), [width]);
+function TrackPack() {
+  const pack = useTrackPack();
+  const instance = useMemo(() => clone(pack), [pack]);
+  return <primitive object={instance} />;
+}
+
+function Ground() {
   return (
-    <mesh geometry={geometry} position={[0, y, 0]} receiveShadow>
-      <meshStandardMaterial color={color} roughness={roughness} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
+      <planeGeometry args={[260, 260]} />
+      <meshStandardMaterial color="#b7d49a" roughness={1} />
     </mesh>
-  );
-}
-
-function RoadMarkings() {
-  const centerDashes = [];
-  for (let t = 0.03; t <= 0.97; t += 0.022) {
-    const { point, tangent } = getTrackData(t);
-    const angle = Math.atan2(tangent.x, tangent.z);
-    centerDashes.push(
-      <mesh key={`c-${t}`} position={[point.x, 0.018, point.z]} rotation={[-Math.PI / 2, angle, 0]}>
-        <planeGeometry args={[0.16, 1.15]} />
-        <meshStandardMaterial color="#e5e7eb" roughness={0.42} />
-      </mesh>
-    );
-  }
-
-  const sideMarks = [];
-  for (let t = 0.01; t <= 0.99; t += 0.015) {
-    const { point, tangent, normal } = getTrackData(t);
-    const angle = Math.atan2(tangent.x, tangent.z);
-    const left = point.clone().add(normal.clone().multiplyScalar(-TRACK_WIDTH / 2 + 0.14));
-    const right = point.clone().add(normal.clone().multiplyScalar(TRACK_WIDTH / 2 - 0.14));
-    sideMarks.push(
-      <mesh key={`l-${t}`} position={[left.x, 0.02, left.z]} rotation={[-Math.PI / 2, angle, 0]}>
-        <planeGeometry args={[0.12, 1.3]} />
-        <meshStandardMaterial color="#f1df74" roughness={0.45} />
-      </mesh>
-    );
-    sideMarks.push(
-      <mesh key={`r-${t}`} position={[right.x, 0.02, right.z]} rotation={[-Math.PI / 2, angle, 0]}>
-        <planeGeometry args={[0.12, 1.3]} />
-        <meshStandardMaterial color="#f1df74" roughness={0.45} />
-      </mesh>
-    );
-  }
-
-  return <group>{centerDashes}{sideMarks}</group>;
-}
-
-function Road() {
-  return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
-        <planeGeometry args={[220, 220]} />
-        <meshStandardMaterial color="#b7d49a" roughness={1} />
-      </mesh>
-      <Ribbon width={SHOULDER_WIDTH} color="#45526a" y={-0.012} roughness={0.95} />
-      <Ribbon width={TRACK_WIDTH} color="#2d3950" y={0} roughness={0.9} />
-      <RoadMarkings />
-    </group>
   );
 }
 
@@ -320,9 +259,9 @@ function GateSignText({ section }) {
 }
 
 function Gate({ section, t, isActive, isPassed, onSelect }) {
-  const accent = section.accent;
   const { point, tangent } = getTrackData(t);
   const angle = Math.atan2(tangent.x, tangent.z);
+  const accent = section.accent;
 
   return (
     <group position={[point.x, 0, point.z]} rotation={[0, angle, 0]} onClick={() => onSelect(section)}>
@@ -343,27 +282,19 @@ function Gate({ section, t, isActive, isPassed, onSelect }) {
         <meshStandardMaterial color="#020617" roughness={0.38} metalness={0.1} emissive={isActive ? accent : "#000000"} emissiveIntensity={isActive ? 0.12 : 0} />
       </mesh>
       <GateSignText section={section} />
-      <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[TRACK_WIDTH - 0.3, 0.2]} />
-        <meshStandardMaterial color={accent} transparent opacity={isPassed ? 0.95 : 0.45} />
-      </mesh>
     </group>
   );
 }
 
-function PlayerCar({ onGatePassed, playerModel }) {
+function PlayerCar({ onGatePassed, playerModel, targetRef }) {
   const keys = useRef({});
-  const groupRef = useRef();
+  const carRef = useRef();
   const carState = useRef({ progress: START_T, laneOffset: 0 });
   const passedIds = useRef(new Set());
 
   useEffect(() => {
-    const down = (event) => {
-      keys.current[event.key.toLowerCase()] = true;
-    };
-    const up = (event) => {
-      keys.current[event.key.toLowerCase()] = false;
-    };
+    const down = (event) => { keys.current[event.key.toLowerCase()] = true; };
+    const up = (event) => { keys.current[event.key.toLowerCase()] = false; };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => {
@@ -373,8 +304,8 @@ function PlayerCar({ onGatePassed, playerModel }) {
   }, []);
 
   useFrame((_, delta) => {
-    const group = groupRef.current;
-    if (!group) return;
+    const car = carRef.current;
+    if (!car) return;
 
     let { progress, laneOffset } = carState.current;
     const forward = (keys.current["w"] || keys.current["arrowup"]) ? 1 : 0;
@@ -382,24 +313,21 @@ function PlayerCar({ onGatePassed, playerModel }) {
     const left = (keys.current["a"] || keys.current["arrowleft"]) ? 1 : 0;
     const right = (keys.current["d"] || keys.current["arrowright"]) ? 1 : 0;
 
-    progress += (forward - backward) * delta * 0.08;
-    laneOffset += (left - right) * delta * 2.4;
-
+    progress += (forward - backward) * delta * 0.085;
+    laneOffset += (left - right) * delta * 2.8;
     progress = THREE.MathUtils.clamp(progress, 0.001, 0.999);
     laneOffset = THREE.MathUtils.clamp(laneOffset, -LANE_LIMIT, LANE_LIMIT);
-
     carState.current.progress = progress;
     carState.current.laneOffset = laneOffset;
 
     const { point, tangent, normal } = getTrackData(progress);
     const pos = point.clone().add(normal.clone().multiplyScalar(laneOffset));
-    group.position.copy(pos);
-    group.position.y = 0.02;
-    group.rotation.y = Math.atan2(tangent.x, tangent.z);
+    car.position.set(pos.x, 0.02, pos.z);
+    car.rotation.y = Math.atan2(tangent.x, tangent.z);
+    if (targetRef) targetRef.current = car;
 
     CV_SECTIONS.forEach((section, index) => {
-      const gateT = GATE_T[index];
-      if (progress >= gateT && !passedIds.current.has(section.id)) {
+      if (progress >= GATE_T[index] && !passedIds.current.has(section.id)) {
         passedIds.current.add(section.id);
         onGatePassed(section);
       }
@@ -407,7 +335,7 @@ function PlayerCar({ onGatePassed, playerModel }) {
   });
 
   return (
-    <group ref={groupRef}>
+    <group ref={carRef}>
       <Car type={playerModel} accent="#f8fafc" scale={1.1} />
     </group>
   );
@@ -432,17 +360,18 @@ function CameraRig({ targetRef }) {
 }
 
 function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
-  const playerRef = useRef();
+  const playerTargetRef = useRef(null);
 
   return (
     <>
       <color attach="background" args={["#87CEEB"]} />
-      <fog attach="fog" args={["#87CEEB", 80, 190]} />
-      <ambientLight intensity={1.15} />
-      <directionalLight position={[14, 20, 8]} intensity={2.4} castShadow shadow-mapSize={[2048, 2048]} />
+      <fog attach="fog" args={["#87CEEB", 90, 210]} />
+      <ambientLight intensity={1.1} />
+      <directionalLight position={[14, 20, 8]} intensity={2.35} castShadow shadow-mapSize={[2048, 2048]} />
       <Environment preset="park" />
 
-      <Road />
+      <Ground />
+      <TrackPack />
       {CV_SECTIONS.map((section, index) => (
         <Gate
           key={section.id}
@@ -453,14 +382,9 @@ function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
           onSelect={onSelect}
         />
       ))}
-
-      <group ref={playerRef}>
-        <PlayerCar onGatePassed={onGatePassed} playerModel={playerModel} />
-      </group>
-      <CameraRig targetRef={playerRef} />
-
-      <ContactShadows opacity={0.45} scale={36} blur={2.8} far={16} position={[0, 0.02, 0]} />
-      <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} />
+      <PlayerCar onGatePassed={onGatePassed} playerModel={playerModel} targetRef={playerTargetRef} />
+      <CameraRig targetRef={playerTargetRef} />
+      <ContactShadows opacity={0.45} scale={44} blur={2.8} far={20} position={[0, 0.02, 0]} />
     </>
   );
 }
@@ -475,26 +399,20 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
         </div>
         <span className="status">{passedIds.length}/5</span>
       </div>
-
       {!activeSection ? (
         <div className="empty-card">
           <p className="pit-name">Ready</p>
           <h2>Drive through Gate 01 to reveal the first CV section.</h2>
-          <p className="period">Use WASD or arrow keys.</p>
+          <p className="period">Use W/S for forward/back and A/D for lane change.</p>
         </div>
       ) : (
         <div className="active-card" style={{ "--accent": activeSection.accent }}>
           <p className="pit-name">{activeSection.gate}</p>
           <h2>{activeSection.title}</h2>
           <p className="period">{activeSection.period}</p>
-          <ul>
-            {activeSection.bullets.map((bullet) => (
-              <li key={bullet}>{bullet}</li>
-            ))}
-          </ul>
+          <ul>{activeSection.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul>
         </div>
       )}
-
       <div className="section-buttons">
         {CV_SECTIONS.map((section) => {
           const isUnlocked = passedIds.includes(section.id);
@@ -513,7 +431,6 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
           );
         })}
       </div>
-
       <div className="contact-box">
         <a href="mailto:danielzabarskyy@gmail.com">danielzabarskyy@gmail.com</a>
         <span>053-3372999</span>
@@ -534,12 +451,7 @@ function CarSelectOverlay({ selectedCar, setSelectedCar, onStart }) {
         <h3>Choose your car</h3>
         <div className="car-select-grid">
           {PLAYER_CARS.map((car) => (
-            <button
-              key={car.id}
-              className={`car-select-card ${selectedCar.id === car.id ? "selected" : ""}`}
-              style={{ "--accent": car.accent }}
-              onClick={() => setSelectedCar(car)}
-            >
+            <button key={car.id} className={`car-select-card ${selectedCar.id === car.id ? "selected" : ""}`} style={{ "--accent": car.accent }} onClick={() => setSelectedCar(car)}>
               <span className="car-icon">◆</span>
               <strong>{car.label}</strong>
               <small>{car.description}</small>
@@ -549,6 +461,16 @@ function CarSelectOverlay({ selectedCar, setSelectedCar, onStart }) {
         <button className="start-button" onClick={onStart}>Start driving</button>
       </div>
     </div>
+  );
+}
+
+function LoadingOverlay() {
+  return (
+    <Html center>
+      <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(2,6,23,0.82)", color: "white", fontWeight: 700 }}>
+        Loading track assets…
+      </div>
+    </Html>
   );
 }
 
@@ -566,36 +488,22 @@ export default function App() {
   return (
     <main className="app">
       {hasStarted && (
-        <Canvas shadows camera={{ position: [6.5, 6, -80], fov: 50 }}>
-          <Suspense fallback={null}>
-            <Scene
-              activeId={activeSection?.id}
-              passedIds={passedIds}
-              onGatePassed={handleGatePassed}
-              onSelect={setActiveSection}
-              playerModel={selectedCar.model}
-            />
+        <Canvas shadows camera={{ position: [6.5, 6, 95], fov: 50 }}>
+          <Suspense fallback={<LoadingOverlay />}>
+            <Scene activeId={activeSection?.id} passedIds={passedIds} onGatePassed={handleGatePassed} onSelect={setActiveSection} playerModel={selectedCar.model} />
           </Suspense>
         </Canvas>
       )}
-
       {hasStarted && (
         <>
           <CvPanel activeSection={activeSection} passedIds={passedIds} onSelect={setActiveSection} />
           <div className="hud">
             <strong>Drive:</strong> W/S = forward/back, A/D = lane shift
-            <span>The car now follows the same curved road as the gates.</span>
+            <span>Now using the actual uploaded track assets.</span>
           </div>
         </>
       )}
-
-      {!hasStarted && (
-        <CarSelectOverlay
-          selectedCar={selectedCar}
-          setSelectedCar={setSelectedCar}
-          onStart={() => setHasStarted(true)}
-        />
-      )}
+      {!hasStarted && <CarSelectOverlay selectedCar={selectedCar} setSelectedCar={setSelectedCar} onStart={() => setHasStarted(true)} />}
     </main>
   );
 }
