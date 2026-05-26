@@ -1,9 +1,12 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { Html, OrbitControls, Stars, ContactShadows, Environment } from "@react-three/drei";
+import { Html, OrbitControls, Stars, ContactShadows, Environment, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
+
+const INTRO_PARAGRAPH =
+  "I see myself as a motivated and hands-on person who enjoys understanding how things work in real life, not only in theory. I’m curious, practical, and I like solving problems by combining engineering thinking with actual testing and building. I enjoy working with physical systems, learning new technologies, and taking responsibility when something needs to move forward. I’m looking for a place where I can grow as a mechanical engineer, contribute to real product development, and be part of a team that works on challenging and meaningful technology.";
 
 const MODEL_PATHS = {
   car: "./models/Car.fbx",
@@ -100,7 +103,10 @@ const CV_SECTIONS = [
   },
 ];
 
-const GATE_Z = [-12, -6, 0, 6, 12];
+// Longer track: bigger spacing between gates.
+const GATE_Z = [-22, -11, 0, 11, 22];
+const TRACK_START_Z = -31;
+const TRACK_END_Z = 31;
 
 function prepareFbxScene(fbx, targetSize = 2.4) {
   const model = clone(fbx);
@@ -138,7 +144,7 @@ function prepareFbxScene(fbx, targetSize = 2.4) {
 
   const largest = Math.max(size.x, size.y, size.z) || 1;
   root.scale.setScalar(targetSize / largest);
-  root.rotation.y = Math.PI;
+  root.rotation.y = 0;
 
   root.animations = fbx.animations || [];
   return root;
@@ -211,42 +217,75 @@ function Car({ type, accent, ...props }) {
 }
 
 function Road() {
+  const dashCount = 25;
+  const dashSpacing = (TRACK_END_Z - TRACK_START_Z) / dashCount;
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]} receiveShadow>
-        <planeGeometry args={[18, 42]} />
+        <planeGeometry args={[18, 72]} />
         <meshStandardMaterial color="#020617" roughness={0.95} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, 0]} receiveShadow>
-        <planeGeometry args={[6.2, 36]} />
+        <planeGeometry args={[6.2, 66]} />
         <meshStandardMaterial color="#172033" roughness={0.9} />
       </mesh>
 
-      {Array.from({ length: 15 }).map((_, index) => (
-        <mesh key={index} position={[0, 0.01, -17 + index * 2.45]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[0.14, 1.0]} />
+      {Array.from({ length: dashCount }).map((_, index) => (
+        <mesh key={index} position={[0, 0.01, TRACK_START_Z + index * dashSpacing + 1.4]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.14, 1.05]} />
           <meshStandardMaterial color="#e2e8f0" roughness={0.45} />
         </mesh>
       ))}
 
       <mesh position={[-3.2, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.13, 36]} />
+        <planeGeometry args={[0.13, 66]} />
         <meshStandardMaterial color="#facc15" roughness={0.5} />
       </mesh>
 
       <mesh position={[3.2, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.13, 36]} />
+        <planeGeometry args={[0.13, 66]} />
         <meshStandardMaterial color="#facc15" roughness={0.5} />
       </mesh>
 
-      <Html position={[0, 0.15, -17.6]} center>
+      <Html position={[0, 0.15, TRACK_START_Z]} center>
         <div className="track-marker">START</div>
       </Html>
 
-      <Html position={[0, 0.15, 17.4]} center>
+      <Html position={[0, 0.15, TRACK_END_Z]} center>
         <div className="track-marker">FINISH</div>
       </Html>
+    </group>
+  );
+}
+
+function GateSignText({ section }) {
+  return (
+    <group position={[0, 3.32, -0.19]} rotation={[0, Math.PI, 0]}>
+      <Text
+        position={[0, 0.17, 0]}
+        fontSize={0.28}
+        maxWidth={4.6}
+        textAlign="center"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {section.gate}
+        <meshBasicMaterial attach="material" color={section.accent} side={THREE.DoubleSide} toneMapped={false} />
+      </Text>
+
+      <Text
+        position={[0, -0.18, 0]}
+        fontSize={0.42}
+        maxWidth={5.3}
+        textAlign="center"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {section.label}
+        <meshBasicMaterial attach="material" color="#f8fafc" side={THREE.DoubleSide} toneMapped={false} />
+      </Text>
     </group>
   );
 }
@@ -255,14 +294,14 @@ function Gate({ section, z, isActive, isPassed, onSelect }) {
   const accent = section.accent;
 
   return (
-    <group position={[0, 0, z]}>
+    <group position={[0, 0, z]} onClick={() => onSelect(section)}>
       <mesh position={[-3.25, 1.35, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.22, 2.7, 0.22]} />
+        <boxGeometry args={[0.24, 2.7, 0.24]} />
         <meshStandardMaterial color={isPassed ? accent : "#64748b"} roughness={0.5} />
       </mesh>
 
       <mesh position={[3.25, 1.35, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.22, 2.7, 0.22]} />
+        <boxGeometry args={[0.24, 2.7, 0.24]} />
         <meshStandardMaterial color={isPassed ? accent : "#64748b"} roughness={0.5} />
       </mesh>
 
@@ -271,17 +310,17 @@ function Gate({ section, z, isActive, isPassed, onSelect }) {
         <meshStandardMaterial color={isActive ? accent : "#0f172a"} roughness={0.4} emissive={isActive ? accent : "#000000"} emissiveIntensity={isActive ? 0.25 : 0} />
       </mesh>
 
+      <mesh position={[0, 3.28, -0.08]} castShadow receiveShadow>
+        <boxGeometry args={[4.25, 0.98, 0.1]} />
+        <meshStandardMaterial color="#020617" roughness={0.38} metalness={0.1} emissive={isActive ? accent : "#000000"} emissiveIntensity={isActive ? 0.12 : 0} />
+      </mesh>
+
+      <GateSignText section={section} />
+
       <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[6.9, 0.2]} />
         <meshStandardMaterial color={accent} transparent opacity={isPassed ? 0.95 : 0.45} />
       </mesh>
-
-      <Html position={[0, 3.22, 0]} center>
-        <button className={`gate-label ${isActive ? "active" : ""} ${isPassed ? "passed" : ""}`} style={{ "--accent": accent }} onClick={() => onSelect(section)}>
-          <span>{section.gate}</span>
-          <strong>{section.label}</strong>
-        </button>
-      </Html>
     </group>
   );
 }
@@ -311,7 +350,7 @@ function PlayerCar({ onGatePassed, carRef, playerModel }) {
     const car = carRef.current;
     if (!car) return;
 
-    const speed = 6.4;
+    const speed = 7.0;
     let dx = 0;
     let dz = 0;
 
@@ -326,13 +365,13 @@ function PlayerCar({ onGatePassed, carRef, playerModel }) {
       dz /= length;
 
       car.position.x = THREE.MathUtils.clamp(car.position.x + dx * speed * delta, -2.55, 2.55);
-      car.position.z = THREE.MathUtils.clamp(car.position.z + dz * speed * delta, -18.0, 18.0);
+      car.position.z = THREE.MathUtils.clamp(car.position.z + dz * speed * delta, TRACK_START_Z - 1, TRACK_END_Z + 1);
       car.rotation.y = Math.atan2(dx, dz);
     }
 
     CV_SECTIONS.forEach((section, index) => {
       const gateZ = GATE_Z[index];
-      const nearGate = Math.abs(car.position.z - gateZ) < 0.38;
+      const nearGate = Math.abs(car.position.z - gateZ) < 0.46;
       const insideRoad = Math.abs(car.position.x) < 3.0;
 
       if (nearGate && insideRoad && !passedIds.current.has(section.id)) {
@@ -343,7 +382,7 @@ function PlayerCar({ onGatePassed, carRef, playerModel }) {
   });
 
   return (
-    <group ref={carRef} position={[0, 0.02, -17]}>
+    <group ref={carRef} position={[0, 0.02, TRACK_START_Z + 1.2]}>
       <Car type={playerModel} accent="#f8fafc" scale={1.1} />
       <Html position={[0, 1.65, 0]} center>
         <div className="player-tag">YOU</div>
@@ -377,16 +416,16 @@ function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
   return (
     <>
       <color attach="background" args={["#020617"]} />
-      <fog attach="fog" args={["#020617", 16, 48]} />
+      <fog attach="fog" args={["#020617", 22, 74]} />
 
       <ambientLight intensity={0.68} />
       <directionalLight position={[8, 12, 6]} intensity={2.8} castShadow shadow-mapSize={[2048, 2048]} />
-      <pointLight position={[0, 4, -12]} intensity={2.4} color="#38bdf8" />
+      <pointLight position={[0, 4, -22]} intensity={2.4} color="#38bdf8" />
       <pointLight position={[0, 4, 0]} intensity={2.2} color="#a78bfa" />
-      <pointLight position={[0, 4, 12]} intensity={2.3} color="#f97316" />
+      <pointLight position={[0, 4, 22]} intensity={2.3} color="#f97316" />
 
       <Environment preset="city" />
-      <Stars radius={75} depth={50} count={1600} factor={3.2} fade speed={0.35} />
+      <Stars radius={95} depth={65} count={1800} factor={3.2} fade speed={0.35} />
 
       <Road />
 
@@ -473,11 +512,13 @@ function CarSelectOverlay({ selectedCar, setSelectedCar, onStart }) {
   return (
     <div className="select-screen">
       <div className="select-card">
-        <p className="eyebrow">Interactive CV concept</p>
-        <h2>Select your car</h2>
-        <p className="select-subtitle">
-          Then drive through the gates in chronological order. Each gate unlocks a CV section on the right side.
-        </p>
+        <p className="eyebrow">Interactive resume</p>
+        <h2>Daniel Zabarsky CV</h2>
+        <p className="intro-paragraph">{INTRO_PARAGRAPH}</p>
+
+        <div className="select-divider" />
+
+        <h3>Choose your car</h3>
 
         <div className="car-select-grid">
           {PLAYER_CARS.map((car) => (
@@ -514,7 +555,7 @@ export default function App() {
   return (
     <main className="app">
       {hasStarted && (
-        <Canvas shadows camera={{ position: [6.5, 6, -25], fov: 50 }}>
+        <Canvas shadows camera={{ position: [6.5, 6, TRACK_START_Z - 7], fov: 50 }}>
           <Suspense fallback={null}>
             <Scene
               activeId={activeSection?.id}

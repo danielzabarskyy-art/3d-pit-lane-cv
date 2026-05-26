@@ -310,10 +310,11 @@ a {
     radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 36%),
     radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.12), transparent 32%),
     linear-gradient(135deg, #020617, #0f172a);
+  overflow-y: auto;
 }
 
 .select-card {
-  width: min(760px, 100%);
+  width: min(880px, 100%);
   border: 1px solid rgba(125, 211, 252, 0.35);
   border-radius: 30px;
   padding: 34px;
@@ -323,22 +324,37 @@ a {
 
 .select-card h2 {
   margin: 0;
-  font-size: clamp(36px, 6vw, 64px);
+  font-size: clamp(38px, 6vw, 72px);
   line-height: 0.98;
   letter-spacing: -0.06em;
 }
 
-.select-subtitle {
-  margin: 18px 0 0;
-  color: #cbd5e1;
-  line-height: 1.7;
+.intro-paragraph {
+  max-width: 780px;
+  margin: 20px 0 0;
+  color: #dbeafe;
+  line-height: 1.85;
+  font-size: 15.5px;
+}
+
+.select-divider {
+  height: 1px;
+  margin: 26px 0 22px;
+  background: linear-gradient(90deg, rgba(125, 211, 252, 0.55), transparent);
+}
+
+.select-card h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 22px;
+  letter-spacing: -0.02em;
 }
 
 .car-select-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
-  margin-top: 24px;
+  margin-top: 16px;
 }
 
 .car-select-card {
@@ -419,5 +435,14 @@ a {
 
   .car-select-grid {
     grid-template-columns: 1fr;
+  }
+
+  .select-card {
+    padding: 24px;
+  }
+
+  .intro-paragraph {
+    font-size: 14px;
+    line-height: 1.7;
   }
 }
