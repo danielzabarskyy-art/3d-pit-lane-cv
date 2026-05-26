@@ -9,7 +9,7 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 const INTRO_PARAGRAPH =
   "I see myself as a motivated and hands-on person who enjoys understanding how things work in real life, not only in theory. I’m curious, practical, and I like solving problems by combining engineering thinking with actual testing and building. I enjoy working with physical systems, learning new technologies, and taking responsibility when something needs to move forward. I’m looking for a place where I can grow as a mechanical engineer, contribute to real product development, and be part of a team that works on challenging and meaningful technology.";
 
-const VERSION_LABEL = "v8.7 STABLE ROAD DRIVE";
+const VERSION_LABEL = "v8.8 EXTENDED ROAD";
 
 const MODEL_PATHS = {
   car: "./models/Car.fbx",
@@ -88,22 +88,23 @@ const CV_SECTIONS = [
   },
 ];
 
-const TRACK_WIDTH = 7.6;
-const SHOULDER_WIDTH = 10.8;
+const TRACK_WIDTH = 8.8;
+const SHOULDER_WIDTH = 12.6;
 const START_T = 0.03;
 const CURVE_POINTS = [
-  new THREE.Vector3(20, 0, 82),
-  new THREE.Vector3(16, 0, 62),
-  new THREE.Vector3(8, 0, 42),
-  new THREE.Vector3(-6, 0, 22),
-  new THREE.Vector3(-18, 0, 4),
-  new THREE.Vector3(-24, 0, -14),
-  new THREE.Vector3(-18, 0, -34),
-  new THREE.Vector3(-6, 0, -52),
-  new THREE.Vector3(6, 0, -66),
-  new THREE.Vector3(12, 0, -80),
+  new THREE.Vector3(10, 0, 118),
+  new THREE.Vector3(14, 0, 92),
+  new THREE.Vector3(8, 0, 66),
+  new THREE.Vector3(-4, 0, 42),
+  new THREE.Vector3(-14, 0, 18),
+  new THREE.Vector3(-12, 0, -8),
+  new THREE.Vector3(0, 0, -34),
+  new THREE.Vector3(14, 0, -60),
+  new THREE.Vector3(18, 0, -86),
+  new THREE.Vector3(8, 0, -112),
+  new THREE.Vector3(-4, 0, -136),
 ];
-const GATE_T = [0.12, 0.30, 0.48, 0.68, 0.86];
+const GATE_T = [0.10, 0.27, 0.44, 0.62, 0.80];
 const centerlineCurve = new THREE.CatmullRomCurve3(CURVE_POINTS, false, "catmullrom", 0.45);
 
 function getTrackData(t) {
@@ -240,7 +241,7 @@ function Car({ type, accent, ...props }) {
 function Road() {
   const segments = useMemo(() => {
     const items = [];
-    const count = 120;
+    const count = 190;
     for (let i = 0; i < count; i++) {
       const t1 = i / count;
       const t2 = (i + 1) / count;
@@ -258,33 +259,33 @@ function Road() {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
-        <planeGeometry args={[260, 260]} />
+        <planeGeometry args={[520, 520]} />
         <meshStandardMaterial color="#a8cb8f" roughness={1} />
       </mesh>
 
       {segments.map((seg) => (
         <group key={seg.index} position={[seg.mid.x, 0, seg.mid.z]} rotation={[0, seg.angle, 0]}>
           <mesh position={[0, -0.025, 0]} receiveShadow>
-            <boxGeometry args={[SHOULDER_WIDTH, 0.05, seg.length + 0.35]} />
+            <boxGeometry args={[SHOULDER_WIDTH, 0.05, seg.length + 0.9]} />
             <meshStandardMaterial color="#526071" roughness={0.98} />
           </mesh>
           <mesh position={[0, 0, 0]} receiveShadow>
-            <boxGeometry args={[TRACK_WIDTH, 0.04, seg.length + 0.08]} />
+            <boxGeometry args={[TRACK_WIDTH, 0.04, seg.length + 0.55]} />
             <meshStandardMaterial color="#1f2937" roughness={0.92} />
           </mesh>
 
           <mesh position={[0, 0.025, 0]} receiveShadow>
-            <boxGeometry args={[0.16, 0.01, seg.length * 0.45]} />
+            <boxGeometry args={[0.16, 0.01, seg.length * 0.55]} />
             <meshStandardMaterial color="#f8fafc" roughness={0.4} />
           </mesh>
 
           <mesh position={[-TRACK_WIDTH / 2 + 0.18, 0.026, 0]} receiveShadow>
-            <boxGeometry args={[0.12, 0.01, seg.length + 0.1]} />
+            <boxGeometry args={[0.12, 0.01, seg.length + 0.55]} />
             <meshStandardMaterial color="#f1df74" roughness={0.45} />
           </mesh>
 
           <mesh position={[TRACK_WIDTH / 2 - 0.18, 0.026, 0]} receiveShadow>
-            <boxGeometry args={[0.12, 0.01, seg.length + 0.1]} />
+            <boxGeometry args={[0.12, 0.01, seg.length + 0.55]} />
             <meshStandardMaterial color="#f1df74" roughness={0.45} />
           </mesh>
         </group>
@@ -372,7 +373,7 @@ function PlayerCar({ onGatePassed, playerModel, targetRef }) {
     laneOffset += (right - left) * delta * 3.2;
 
     progress = THREE.MathUtils.clamp(progress, 0.001, 0.999);
-    laneOffset = THREE.MathUtils.clamp(laneOffset, -TRACK_WIDTH * 0.34, TRACK_WIDTH * 0.34);
+    laneOffset = THREE.MathUtils.clamp(laneOffset, -TRACK_WIDTH * 0.38, TRACK_WIDTH * 0.38);
 
     carState.current.progress = progress;
     carState.current.laneOffset = laneOffset;
@@ -428,7 +429,7 @@ function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
   return (
     <>
       <color attach="background" args={["#87CEEB"]} />
-      <fog attach="fog" args={["#87CEEB", 90, 210]} />
+      <fog attach="fog" args={["#87CEEB", 120, 360]} />
       <ambientLight intensity={1.15} />
       <directionalLight position={[14, 20, 8]} intensity={2.35} castShadow shadow-mapSize={[2048, 2048]} />
       <Environment preset="park" />
@@ -539,7 +540,7 @@ function LoadingOverlay() {
   return (
     <Html center>
       <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(2,6,23,0.82)", color: "white", fontWeight: 700 }}>
-        Loading v8.7 stable drive…
+        Loading v8.8 extended road…
       </div>
     </Html>
   );
@@ -559,7 +560,7 @@ export default function App() {
   return (
     <main className="app">
       {hasStarted && (
-        <Canvas shadows camera={{ position: [6.5, 6, 95], fov: 50 }}>
+        <Canvas shadows camera={{ position: [6.5, 6, 130], fov: 50 }}>
           <Suspense fallback={<LoadingOverlay />}>
             <Scene activeId={activeSection?.id} passedIds={passedIds} onGatePassed={handleGatePassed} onSelect={setActiveSection} playerModel={selectedCar.model} />
           </Suspense>

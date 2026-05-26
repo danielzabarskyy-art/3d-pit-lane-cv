@@ -1,15 +1,16 @@
-# Daniel Zabarsky – 3D Gate CV v8.7
+# Daniel Zabarsky – 3D Gate CV v8.8
 
 ## Fix
-This version fixes the unstable driving near the Skills gate.
+This version fixes the feeling of hitting the end of the playground near Skills.
 
 ## Changes
-- Keeps the current good road graphics
-- Keeps the long curved track
-- Replaces free-steering with stable path-locked driving
-- W/S = forward/back along the road
-- A/D = move left/right inside the lane
-- Gate unlocking is based on track progress, preventing camera/car snapping
+- Enlarged the ground/playground area significantly
+- Widened the road and shoulders
+- Extended the road farther beyond Skills and Military
+- Smoothed the curve after Education / Skills
+- Added more road segments with overlap to avoid gaps on curves
+- Kept stable path-locked driving
 
-## Important
-Delete `public/trackpack` if it still exists in GitHub before uploading this version.
+Controls:
+- W/S = forward/back
+- A/D = left/right inside the lane
