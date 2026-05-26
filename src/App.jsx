@@ -7,7 +7,7 @@ import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 const INTRO_PARAGRAPH =
-  "I see myself as a motivated and hands-on person who enjoys understanding how things work in real life, not only in theory. I’m curious, practical, and I like solving problems by combining engineering thinking with actual testing and building. I enjoy working with physical systems, learning new technologies, and taking responsibility when something needs to move forward. I’m looking for a place where I can grow as a mechanical engineer, contribute to real product development, and be part of a team that works on challenging and meaningful technology.";
+    "I see myself as a motivated and hands-on person who enjoys understanding how things work in real life, not only in theory. I’m curious, practical, and I like solving problems by combining engineering thinking with actual testing and building. I enjoy working with physical systems, learning new technologies, and taking responsibility when something needs to move forward. I’m looking for a place where I can grow as a mechanical engineer, contribute to real product development, and be part of a team that want to push forwards.";
 
 
 const MODEL_PATHS = {
