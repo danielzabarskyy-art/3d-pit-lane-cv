@@ -3,7 +3,6 @@ import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Html, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 const INTRO_PARAGRAPH =
@@ -18,11 +17,6 @@ const MODEL_PATHS = {
   taxiStylized: "./models/Taxi_stylized.fbx",
 };
 
-const TRACK_ASSETS = {
-  track: "./trackpack/RaceTrackExport/Track_small.glb",
-  banners: "./trackpack/RaceTrackExport/Banners.fbx",
-};
-
 const PLAYER_CARS = [
   { id: "police", label: "Police", model: "police", accent: "#60a5fa", description: "Clean, sharp, and professional." },
   { id: "taxi", label: "Taxi", model: "taxiStylized", accent: "#facc15", description: "Bold, visible, and fun." },
@@ -31,8 +25,12 @@ const PLAYER_CARS = [
 
 const CV_SECTIONS = [
   {
-    id: "stratasys", label: "Stratasys", gate: "Gate 01", accent: "#38bdf8",
-    title: "Stratasys Ltd. – Mechanical Engineering Student", period: "Feb 2025 – Present",
+    id: "stratasys",
+    label: "Stratasys",
+    gate: "Gate 01",
+    accent: "#38bdf8",
+    title: "Stratasys Ltd. – Mechanical Engineering Student",
+    period: "Feb 2025 – Present",
     bullets: [
       "Built a comprehensive understanding of engineering processes (ECR, ECO, DEV, MCO).",
       "Implemented and programmed a robotic arm, integrating control systems for automated operations.",
@@ -42,8 +40,12 @@ const CV_SECTIONS = [
     ],
   },
   {
-    id: "bgracing", label: "BGRaicing", gate: "Gate 02", accent: "#facc15",
-    title: "BGRaicing – System Engineer", period: "2024 – Present",
+    id: "bgracing",
+    label: "BGRaicing",
+    gate: "Gate 02",
+    accent: "#facc15",
+    title: "BGRaicing – System Engineer",
+    period: "2024 – Present",
     bullets: [
       "Hands-on experience in a Formula Student project, encompassing end-to-end vehicle development from planning and design to production.",
       "Led integration between mechanical and electrical systems to ensure seamless functionality.",
@@ -52,18 +54,30 @@ const CV_SECTIONS = [
     ],
   },
   {
-    id: "education", label: "Education", gate: "Gate 03", accent: "#a78bfa",
-    title: "B.Sc. Mechanical Engineering – Ben-Gurion University", period: "2023 – Present | Expected Graduation: 2026 | GPA: 81",
+    id: "education",
+    label: "Education",
+    gate: "Gate 03",
+    accent: "#a78bfa",
+    title: "B.Sc. Mechanical Engineering – Ben-Gurion University",
+    period: "2023 – Present | Expected Graduation: 2026 | GPA: 81",
     bullets: ["Mechanical Engineering student at Ben-Gurion University."],
   },
   {
-    id: "skills", label: "Skills", gate: "Gate 04", accent: "#22c55e",
-    title: "Skills", period: "Technical stack",
+    id: "skills",
+    label: "Skills",
+    gate: "Gate 04",
+    accent: "#22c55e",
+    title: "Skills",
+    period: "Technical stack",
     bullets: ["SolidWorks", "C", "MATLAB", "Agile PLM", "EPDM", "Oracle", "Microsoft Office"],
   },
   {
-    id: "military", label: "Military", gate: "Gate 05", accent: "#f97316",
-    title: "Combat Officer, Battalion 601 – Combat Engineering Corps", period: "2015 – 2020",
+    id: "military",
+    label: "Military",
+    gate: "Gate 05",
+    accent: "#f97316",
+    title: "Combat Officer, Battalion 601 – Combat Engineering Corps",
+    period: "2015 – 2020",
     bullets: [
       "Led detailed planning and execution of activities and arrests.",
       "Distinguished of specialized courses including Class Commanders, Senior Sergent, Officers (with excellence), and Commando training.",
@@ -71,8 +85,11 @@ const CV_SECTIONS = [
   },
 ];
 
+// Long, smooth S-shaped track. This keeps the good v8 driving length/curves,
+// but removes the heavy uploaded Track.fbx graphics.
 const TRACK_WIDTH = 8.0;
-const LANE_LIMIT = 2.7;
+const SHOULDER_WIDTH = 11.2;
+const LANE_LIMIT = 2.75;
 const CURVE_POINTS = [
   new THREE.Vector3(20, 0, 82),
   new THREE.Vector3(16, 0, 62),
@@ -87,6 +104,7 @@ const CURVE_POINTS = [
 ];
 const GATE_T = [0.12, 0.30, 0.48, 0.68, 0.86];
 const START_T = 0.03;
+
 const centerlineCurve = new THREE.CatmullRomCurve3(CURVE_POINTS, false, "catmullrom", 0.45);
 
 function getTrackData(t) {
@@ -122,13 +140,16 @@ function prepareFbxScene(fbx, targetSize = 2.4) {
   const model = clone(fbx);
   const root = new THREE.Group();
   applyMeshSettings(model);
+
   const box = new THREE.Box3().setFromObject(model);
   const size = new THREE.Vector3();
   const center = new THREE.Vector3();
   box.getSize(size);
   box.getCenter(center);
+
   model.position.set(-center.x, -box.min.y, -center.z);
   root.add(model);
+
   const largest = Math.max(size.x, size.y, size.z) || 1;
   root.scale.setScalar(targetSize / largest);
   root.rotation.y = 0;
@@ -148,9 +169,11 @@ function FbxCar({ type = "carStylized", scale = 1, ...props }) {
 
   useEffect(() => {
     if (!instance.animations || instance.animations.length === 0) return;
+
     const mixer = new THREE.AnimationMixer(instance);
     mixerRef.current = mixer;
     instance.animations.forEach((clip) => mixer.clipAction(clip).reset().play());
+
     return () => {
       mixer.stopAllAction();
       mixerRef.current = null;
@@ -197,49 +220,96 @@ function Car({ type, accent, ...props }) {
   );
 }
 
-function useTrackPack() {
-  const trackGlb = useLoader(GLTFLoader, TRACK_ASSETS.track);
-  const banners = useLoader(FBXLoader, TRACK_ASSETS.banners);
+function makeRibbonGeometry(width) {
+  const segments = 280;
+  const positions = [];
+  const uvs = [];
+  const indices = [];
 
-  return useMemo(() => {
-    const trackClone = clone(trackGlb.scene);
-    const bannersClone = clone(banners);
-    applyMeshSettings(trackClone);
-    applyMeshSettings(bannersClone);
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const { point, normal } = getTrackData(t);
+    const left = point.clone().add(normal.clone().multiplyScalar(-width / 2));
+    const right = point.clone().add(normal.clone().multiplyScalar(width / 2));
 
-    const raw = new THREE.Group();
-    raw.add(trackClone);
-    raw.add(bannersClone);
+    positions.push(left.x, 0, left.z, right.x, 0, right.z);
+    uvs.push(0, t * 34, 1, t * 34);
+  }
 
-    const container = new THREE.Group();
-    container.add(raw);
+  for (let i = 0; i < segments; i++) {
+    const a = i * 2;
+    const b = a + 1;
+    const c = a + 2;
+    const d = a + 3;
+    indices.push(a, c, b, c, d, b);
+  }
 
-    const box = new THREE.Box3().setFromObject(raw);
-    const size = new THREE.Vector3();
-    const center = new THREE.Vector3();
-    box.getSize(size);
-    box.getCenter(center);
-
-    raw.position.set(-center.x, -box.min.y, -center.z);
-    const longest = Math.max(size.x, size.z) || 1;
-    container.scale.setScalar(170 / longest);
-    container.rotation.y = Math.PI;
-    return container;
-  }, [trackGlb, banners]);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setIndex(indices);
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
-function TrackPack() {
-  const pack = useTrackPack();
-  const instance = useMemo(() => clone(pack), [pack]);
-  return <primitive object={instance} />;
-}
-
-function Ground() {
+function Ribbon({ width, color, y = 0, roughness = 0.9 }) {
+  const geometry = useMemo(() => makeRibbonGeometry(width), [width]);
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow>
-      <planeGeometry args={[260, 260]} />
-      <meshStandardMaterial color="#b7d49a" roughness={1} />
+    <mesh geometry={geometry} position={[0, y, 0]} receiveShadow>
+      <meshStandardMaterial color={color} roughness={roughness} />
     </mesh>
+  );
+}
+
+function RoadMarkings() {
+  const centerDashes = [];
+  for (let t = 0.03; t <= 0.97; t += 0.022) {
+    const { point, tangent } = getTrackData(t);
+    const angle = Math.atan2(tangent.x, tangent.z);
+    centerDashes.push(
+      <mesh key={`c-${t}`} position={[point.x, 0.028, point.z]} rotation={[-Math.PI / 2, angle, 0]}>
+        <planeGeometry args={[0.16, 1.18]} />
+        <meshStandardMaterial color="#e5e7eb" roughness={0.42} />
+      </mesh>
+    );
+  }
+
+  const sideMarks = [];
+  for (let t = 0.01; t <= 0.99; t += 0.014) {
+    const { point, tangent, normal } = getTrackData(t);
+    const angle = Math.atan2(tangent.x, tangent.z);
+    const left = point.clone().add(normal.clone().multiplyScalar(-TRACK_WIDTH / 2 + 0.14));
+    const right = point.clone().add(normal.clone().multiplyScalar(TRACK_WIDTH / 2 - 0.14));
+
+    sideMarks.push(
+      <mesh key={`l-${t}`} position={[left.x, 0.03, left.z]} rotation={[-Math.PI / 2, angle, 0]}>
+        <planeGeometry args={[0.13, 1.32]} />
+        <meshStandardMaterial color="#f1df74" roughness={0.45} />
+      </mesh>
+    );
+    sideMarks.push(
+      <mesh key={`r-${t}`} position={[right.x, 0.03, right.z]} rotation={[-Math.PI / 2, angle, 0]}>
+        <planeGeometry args={[0.13, 1.32]} />
+        <meshStandardMaterial color="#f1df74" roughness={0.45} />
+      </mesh>
+    );
+  }
+
+  return <group>{centerDashes}{sideMarks}</group>;
+}
+
+function Road() {
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
+        <planeGeometry args={[260, 260]} />
+        <meshStandardMaterial color="#78b956" roughness={1} />
+      </mesh>
+
+      <Ribbon width={SHOULDER_WIDTH} color="#46566f" y={-0.012} roughness={0.95} />
+      <Ribbon width={TRACK_WIDTH} color="#202a3d" y={0} roughness={0.9} />
+      <RoadMarkings />
+    </group>
   );
 }
 
@@ -315,8 +385,10 @@ function PlayerCar({ onGatePassed, playerModel, targetRef }) {
 
     progress += (forward - backward) * delta * 0.085;
     laneOffset += (left - right) * delta * 2.8;
+
     progress = THREE.MathUtils.clamp(progress, 0.001, 0.999);
     laneOffset = THREE.MathUtils.clamp(laneOffset, -LANE_LIMIT, LANE_LIMIT);
+
     carState.current.progress = progress;
     carState.current.laneOffset = laneOffset;
 
@@ -324,6 +396,7 @@ function PlayerCar({ onGatePassed, playerModel, targetRef }) {
     const pos = point.clone().add(normal.clone().multiplyScalar(laneOffset));
     car.position.set(pos.x, 0.02, pos.z);
     car.rotation.y = Math.atan2(tangent.x, tangent.z);
+
     if (targetRef) targetRef.current = car;
 
     CV_SECTIONS.forEach((section, index) => {
@@ -349,9 +422,11 @@ function CameraRig({ targetRef }) {
   useFrame(() => {
     const target = targetRef.current;
     if (!target) return;
+
     const forward = new THREE.Vector3(0, 0, 1).applyEuler(target.rotation);
     desired.copy(target.position).add(new THREE.Vector3(0, 5.8, 0)).add(forward.clone().multiplyScalar(-9));
     camera.position.lerp(desired, 0.07);
+
     lookAt.copy(target.position).add(forward.clone().multiplyScalar(4)).add(new THREE.Vector3(0, 1.0, 0));
     camera.lookAt(lookAt);
   });
@@ -370,8 +445,8 @@ function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
       <directionalLight position={[14, 20, 8]} intensity={2.35} castShadow shadow-mapSize={[2048, 2048]} />
       <Environment preset="park" />
 
-      <Ground />
-      <TrackPack />
+      <Road />
+
       {CV_SECTIONS.map((section, index) => (
         <Gate
           key={section.id}
@@ -382,6 +457,7 @@ function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
           onSelect={onSelect}
         />
       ))}
+
       <PlayerCar onGatePassed={onGatePassed} playerModel={playerModel} targetRef={playerTargetRef} />
       <CameraRig targetRef={playerTargetRef} />
       <ContactShadows opacity={0.45} scale={44} blur={2.8} far={20} position={[0, 0.02, 0]} />
@@ -399,6 +475,7 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
         </div>
         <span className="status">{passedIds.length}/5</span>
       </div>
+
       {!activeSection ? (
         <div className="empty-card">
           <p className="pit-name">Ready</p>
@@ -413,6 +490,7 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
           <ul>{activeSection.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul>
         </div>
       )}
+
       <div className="section-buttons">
         {CV_SECTIONS.map((section) => {
           const isUnlocked = passedIds.includes(section.id);
@@ -431,6 +509,7 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
           );
         })}
       </div>
+
       <div className="contact-box">
         <a href="mailto:danielzabarskyy@gmail.com">danielzabarskyy@gmail.com</a>
         <span>053-3372999</span>
@@ -447,8 +526,10 @@ function CarSelectOverlay({ selectedCar, setSelectedCar, onStart }) {
         <p className="eyebrow">Interactive resume</p>
         <h2>Daniel Zabarsky CV</h2>
         <p className="intro-paragraph">{INTRO_PARAGRAPH}</p>
+
         <div className="select-divider" />
         <h3>Choose your car</h3>
+
         <div className="car-select-grid">
           {PLAYER_CARS.map((car) => (
             <button key={car.id} className={`car-select-card ${selectedCar.id === car.id ? "selected" : ""}`} style={{ "--accent": car.accent }} onClick={() => setSelectedCar(car)}>
@@ -458,6 +539,7 @@ function CarSelectOverlay({ selectedCar, setSelectedCar, onStart }) {
             </button>
           ))}
         </div>
+
         <button className="start-button" onClick={onStart}>Start driving</button>
       </div>
     </div>
@@ -468,7 +550,7 @@ function LoadingOverlay() {
   return (
     <Html center>
       <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(2,6,23,0.82)", color: "white", fontWeight: 700 }}>
-        Loading track assets…
+        Loading…
       </div>
     </Html>
   );
@@ -494,15 +576,17 @@ export default function App() {
           </Suspense>
         </Canvas>
       )}
+
       {hasStarted && (
         <>
           <CvPanel activeSection={activeSection} passedIds={passedIds} onSelect={setActiveSection} />
           <div className="hud">
             <strong>Drive:</strong> W/S = forward/back, A/D = lane shift
-            <span>Now using the actual uploaded track assets.</span>
+            <span>Long curved generated track.</span>
           </div>
         </>
       )}
+
       {!hasStarted && <CarSelectOverlay selectedCar={selectedCar} setSelectedCar={setSelectedCar} onStart={() => setHasStarted(true)} />}
     </main>
   );
