@@ -1,0 +1,9 @@
+Delete these from GitHub if they still exist:
+
+public/trackpack/
+package-lock.json
+
+Then upload/replace all v8.5 files.
+
+If the website does not show "v8.5 CLEAN GENERATED TRACK" in the panel/HUD,
+GitHub is still serving old code or the workflow did not deploy the new commit.

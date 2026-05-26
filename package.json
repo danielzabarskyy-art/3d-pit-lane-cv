@@ -1,7 +1,7 @@
 {
-  "name": "daniel-3d-gate-cv-v8-4-generated-track",
+  "name": "daniel-3d-gate-cv-v8-5-clean-generated-confirm",
   "private": true,
-  "version": "8.4.0",
+  "version": "8.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

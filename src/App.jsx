@@ -8,6 +8,8 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 const INTRO_PARAGRAPH =
   "I see myself as a motivated and hands-on person who enjoys understanding how things work in real life, not only in theory. I’m curious, practical, and I like solving problems by combining engineering thinking with actual testing and building. I enjoy working with physical systems, learning new technologies, and taking responsibility when something needs to move forward. I’m looking for a place where I can grow as a mechanical engineer, contribute to real product development, and be part of a team that works on challenging and meaningful technology.";
 
+const VERSION_LABEL = "v8.5 CLEAN GENERATED TRACK";
+
 const MODEL_PATHS = {
   car: "./models/Car.fbx",
   carStylized: "./models/Car_stylized.fbx",
@@ -87,8 +89,8 @@ const CV_SECTIONS = [
 
 // Long, smooth S-shaped track. This keeps the good v8 driving length/curves,
 // but removes the heavy uploaded Track.fbx graphics.
-const TRACK_WIDTH = 8.0;
-const SHOULDER_WIDTH = 11.2;
+const TRACK_WIDTH = 7.6;
+const SHOULDER_WIDTH = 10.4;
 const LANE_LIMIT = 2.75;
 const CURVE_POINTS = [
   new THREE.Vector3(20, 0, 82),
@@ -303,11 +305,11 @@ function Road() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
         <planeGeometry args={[260, 260]} />
-        <meshStandardMaterial color="#78b956" roughness={1} />
+        <meshStandardMaterial color="#8fd16a" roughness={1} />
       </mesh>
 
-      <Ribbon width={SHOULDER_WIDTH} color="#46566f" y={-0.012} roughness={0.95} />
-      <Ribbon width={TRACK_WIDTH} color="#202a3d" y={0} roughness={0.9} />
+      <Ribbon width={SHOULDER_WIDTH} color="#64748b" y={-0.012} roughness={0.95} />
+      <Ribbon width={TRACK_WIDTH} color="#111827" y={0} roughness={0.9} />
       <RoadMarkings />
     </group>
   );
@@ -472,6 +474,7 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
         <div>
           <p className="eyebrow">Daniel Zabarsky</p>
           <h1>3D Gate CV</h1>
+          <small style={{ color: "#38bdf8", fontWeight: 800 }}>{VERSION_LABEL}</small>
         </div>
         <span className="status">{passedIds.length}/5</span>
       </div>
@@ -550,7 +553,7 @@ function LoadingOverlay() {
   return (
     <Html center>
       <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(2,6,23,0.82)", color: "white", fontWeight: 700 }}>
-        Loading…
+        Loading v8.5 clean track…
       </div>
     </Html>
   );
@@ -582,7 +585,7 @@ export default function App() {
           <CvPanel activeSection={activeSection} passedIds={passedIds} onSelect={setActiveSection} />
           <div className="hud">
             <strong>Drive:</strong> W/S = forward/back, A/D = lane shift
-            <span>Long curved generated track.</span>
+            <span>{VERSION_LABEL} — no uploaded trackpack graphics.</span>
           </div>
         </>
       )}
