@@ -1,41 +1,22 @@
-# Daniel Zabarsky – 3D Gate CV v4
+# Daniel Zabarsky – 3D Gate CV v4 Action Fixed
 
-Updated version with:
+This version fixes the GitHub Actions deployment issue where `vite` was not found.
 
-1. Start screen title changed to `Daniel Zabarsky CV`.
-2. Added the personal opening paragraph before car selection.
-3. Flipped the FBX car orientation so it should drive forward instead of backwards.
-4. Extended the track length.
-5. Replaced floating HTML gate labels with fixed 3D gate signs.
+## What changed
 
-## Gate order
+- Removed the problematic `package-lock.json`.
+- Workflow now deletes any old `node_modules` and old lock file before installing.
+- Workflow installs dependencies with `npm install --include=dev`.
+- Workflow verifies Vite with `npx vite --version`.
+- Workflow builds with `npx vite build`.
 
-- Gate 01: Stratasys
-- Gate 02: BGRaicing
-- Gate 03: Education
-- Gate 04: Skills
-- Gate 05: Military
+## Upload instructions
 
-## Local setup
+Upload the extracted contents to the root of the repository.
 
-```bash
-npm install
-npm run dev
-```
+Important:
+Delete the old `package-lock.json` from GitHub before running the workflow again, or replace the repo with this clean version.
 
-## GitHub Pages
+GitHub Pages setting:
 
-Use:
-
-`Settings → Pages → Source: GitHub Actions`
-
-Then wait for the Action to turn green.
-
-
-## v4.1 deployment fix
-
-The GitHub Actions workflow now uses Node 24 and sets:
-
-`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
-
-If GitHub still prints a Node 20 deprecation warning for official actions, check whether the workflow still completes with a green check. That warning alone is not the same as a failed deployment.
+Settings → Pages → Source: GitHub Actions
