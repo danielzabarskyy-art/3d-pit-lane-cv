@@ -30,3 +30,12 @@ Use:
 `Settings → Pages → Source: GitHub Actions`
 
 Then wait for the Action to turn green.
+
+
+## v4.1 deployment fix
+
+The GitHub Actions workflow now uses Node 24 and sets:
+
+`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`
+
+If GitHub still prints a Node 20 deprecation warning for official actions, check whether the workflow still completes with a green check. That warning alone is not the same as a failed deployment.
