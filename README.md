@@ -1,12 +1,15 @@
-# Daniel Zabarsky – 3D Gate CV v8.6
+# Daniel Zabarsky – 3D Gate CV v8.7
+
+## Fix
+This version fixes the unstable driving near the Skills gate.
 
 ## Changes
-- Added a visible road again
-- Kept the long curved track
-- Reworked the driving controls to feel more like regular car driving
-- W/S = drive forward/back
-- A/D = steer
-- Gate detection is now based on proximity to each gate
+- Keeps the current good road graphics
+- Keeps the long curved track
+- Replaces free-steering with stable path-locked driving
+- W/S = forward/back along the road
+- A/D = move left/right inside the lane
+- Gate unlocking is based on track progress, preventing camera/car snapping
 
 ## Important
 Delete `public/trackpack` if it still exists in GitHub before uploading this version.

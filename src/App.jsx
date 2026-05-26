@@ -9,7 +9,7 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 const INTRO_PARAGRAPH =
   "I see myself as a motivated and hands-on person who enjoys understanding how things work in real life, not only in theory. I’m curious, practical, and I like solving problems by combining engineering thinking with actual testing and building. I enjoy working with physical systems, learning new technologies, and taking responsibility when something needs to move forward. I’m looking for a place where I can grow as a mechanical engineer, contribute to real product development, and be part of a team that works on challenging and meaningful technology.";
 
-const VERSION_LABEL = "v8.6 ROAD + BETTER DRIVE";
+const VERSION_LABEL = "v8.7 STABLE ROAD DRIVE";
 
 const MODEL_PATHS = {
   car: "./models/Car.fbx",
@@ -339,13 +339,8 @@ function Gate({ section, t, isActive, isPassed, onSelect }) {
 function PlayerCar({ onGatePassed, playerModel, targetRef }) {
   const keys = useRef({});
   const carRef = useRef();
-  const gatePassedRef = useRef(new Set());
-  const startData = useMemo(() => getTrackData(START_T), []);
-  const carState = useRef({
-    position: startData.point.clone(),
-    heading: Math.atan2(startData.tangent.x, startData.tangent.z),
-    speed: 0,
-  });
+  const carState = useRef({ progress: START_T, laneOffset: 0 });
+  const passedIds = useRef(new Set());
 
   useEffect(() => {
     const down = (event) => { keys.current[event.key.toLowerCase()] = true; };
@@ -362,42 +357,39 @@ function PlayerCar({ onGatePassed, playerModel, targetRef }) {
     const car = carRef.current;
     if (!car) return;
 
-    const state = carState.current;
-    const forwardInput = (keys.current["w"] || keys.current["arrowup"] ? 1 : 0) - (keys.current["s"] || keys.current["arrowdown"] ? 1 : 0);
-    const turnInput = (keys.current["d"] || keys.current["arrowright"] ? 1 : 0) - (keys.current["a"] || keys.current["arrowleft"] ? 1 : 0);
+    let { progress, laneOffset } = carState.current;
 
-    state.speed += forwardInput * delta * 14;
-    state.speed *= 0.985;
-    state.speed = THREE.MathUtils.clamp(state.speed, -6, 16);
+    const forward = (keys.current["w"] || keys.current["arrowup"]) ? 1 : 0;
+    const backward = (keys.current["s"] || keys.current["arrowdown"]) ? 1 : 0;
 
-    const turnStrength = THREE.MathUtils.clamp(Math.abs(state.speed) * 0.04 + 0.4, 0.4, 1.25);
-    state.heading -= turnInput * delta * turnStrength;
+    // A/D are intentionally lane movement, not free steering.
+    // This is much more stable on the curved track and prevents the car/camera
+    // from snapping near the Skills gate.
+    const left = (keys.current["a"] || keys.current["arrowleft"]) ? 1 : 0;
+    const right = (keys.current["d"] || keys.current["arrowright"]) ? 1 : 0;
 
-    const forward = new THREE.Vector3(Math.sin(state.heading), 0, Math.cos(state.heading));
-    state.position.add(forward.multiplyScalar(state.speed * delta));
+    progress += (forward - backward) * delta * 0.082;
+    laneOffset += (right - left) * delta * 3.2;
 
-    const nearest = getNearestTrackData(state.position);
-    const offsetVec = state.position.clone().sub(nearest.point);
-    const lateralOffset = THREE.MathUtils.clamp(offsetVec.dot(nearest.normal), -TRACK_WIDTH * 0.35, TRACK_WIDTH * 0.35);
-    const targetPosition = nearest.point.clone().add(nearest.normal.clone().multiplyScalar(lateralOffset));
+    progress = THREE.MathUtils.clamp(progress, 0.001, 0.999);
+    laneOffset = THREE.MathUtils.clamp(laneOffset, -TRACK_WIDTH * 0.34, TRACK_WIDTH * 0.34);
 
-    const blend = nearest.distance > TRACK_WIDTH * 0.5 ? 0.12 : 0.04;
-    state.position.lerp(targetPosition, blend);
+    carState.current.progress = progress;
+    carState.current.laneOffset = laneOffset;
 
-    if (Math.abs(state.speed) > 0.05) {
-      const desiredHeading = Math.atan2(forward.x, forward.z);
-      state.heading = THREE.MathUtils.lerp(state.heading, desiredHeading, 0.15);
-    }
+    const { point, tangent, normal } = getTrackData(progress);
+    const pos = point.clone().add(normal.clone().multiplyScalar(laneOffset));
 
-    car.position.set(state.position.x, 0.02, state.position.z);
-    car.rotation.y = state.heading;
+    car.position.set(pos.x, 0.02, pos.z);
+    car.rotation.y = Math.atan2(tangent.x, tangent.z);
+
     if (targetRef) targetRef.current = car;
 
     CV_SECTIONS.forEach((section, index) => {
-      const gatePos = getTrackData(GATE_T[index]).point;
-      const gateDistance = gatePos.distanceTo(state.position);
-      if (gateDistance < 4.4 && !gatePassedRef.current.has(section.id)) {
-        gatePassedRef.current.add(section.id);
+      const gateT = GATE_T[index];
+
+      if (progress >= gateT && !passedIds.current.has(section.id)) {
+        passedIds.current.add(section.id);
         onGatePassed(section);
       }
     });
@@ -477,7 +469,7 @@ function CvPanel({ activeSection, passedIds, onSelect }) {
         <div className="empty-card">
           <p className="pit-name">Ready</p>
           <h2>Drive through Gate 01 to reveal the first CV section.</h2>
-          <p className="period">Use W/S to drive and A/D to steer.</p>
+          <p className="period">Use W/S to drive and A/D to move left/right inside the lane.</p>
         </div>
       ) : (
         <div className="active-card" style={{ "--accent": activeSection.accent }}>
@@ -547,7 +539,7 @@ function LoadingOverlay() {
   return (
     <Html center>
       <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(2,6,23,0.82)", color: "white", fontWeight: 700 }}>
-        Loading v8.6 road…
+        Loading v8.7 stable drive…
       </div>
     </Html>
   );
@@ -578,7 +570,7 @@ export default function App() {
         <>
           <CvPanel activeSection={activeSection} passedIds={passedIds} onSelect={setActiveSection} />
           <div className="hud">
-            <strong>Drive:</strong> W/S = forward/back, A/D = steer
+            <strong>Drive:</strong> W/S = forward/back, A/D = left/right
             <span>{VERSION_LABEL}</span>
           </div>
         </>

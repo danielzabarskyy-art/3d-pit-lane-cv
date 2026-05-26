@@ -1,7 +1,7 @@
 {
-  "name": "daniel-3d-gate-cv-v8-6-road-and-better-drive",
+  "name": "daniel-3d-gate-cv-v8-7-stable-drive",
   "private": true,
-  "version": "8.6.0",
+  "version": "8.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
