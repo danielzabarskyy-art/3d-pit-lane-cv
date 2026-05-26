@@ -223,12 +223,12 @@ function Road() {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]} receiveShadow>
-        <planeGeometry args={[18, 72]} />
+        <planeGeometry args={[140, 120]} />
         <meshStandardMaterial color="#020617" roughness={0.95} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, 0]} receiveShadow>
-        <planeGeometry args={[6.2, 66]} />
+        <planeGeometry args={[6.8, 72]} />
         <meshStandardMaterial color="#172033" roughness={0.9} />
       </mesh>
 
@@ -240,22 +240,15 @@ function Road() {
       ))}
 
       <mesh position={[-3.2, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.13, 66]} />
+        <planeGeometry args={[0.13, 72]} />
         <meshStandardMaterial color="#facc15" roughness={0.5} />
       </mesh>
 
       <mesh position={[3.2, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.13, 66]} />
+        <planeGeometry args={[0.13, 72]} />
         <meshStandardMaterial color="#facc15" roughness={0.5} />
       </mesh>
 
-      <Html position={[0, 0.15, TRACK_START_Z]} center>
-        <div className="track-marker">START</div>
-      </Html>
-
-      <Html position={[0, 0.15, TRACK_END_Z]} center>
-        <div className="track-marker">FINISH</div>
-      </Html>
     </group>
   );
 }
@@ -356,15 +349,15 @@ function PlayerCar({ onGatePassed, carRef, playerModel }) {
 
     if (keys.current["w"] || keys.current["arrowup"]) dz += 1;
     if (keys.current["s"] || keys.current["arrowdown"]) dz -= 1;
-    if (keys.current["a"] || keys.current["arrowleft"]) dx -= 1;
-    if (keys.current["d"] || keys.current["arrowright"]) dx += 1;
+    if (keys.current["a"] || keys.current["arrowleft"]) dx += 1;
+    if (keys.current["d"] || keys.current["arrowright"]) dx -= 1;
 
     if (dx !== 0 || dz !== 0) {
       const length = Math.hypot(dx, dz);
       dx /= length;
       dz /= length;
 
-      car.position.x = THREE.MathUtils.clamp(car.position.x + dx * speed * delta, -2.55, 2.55);
+      car.position.x = THREE.MathUtils.clamp(car.position.x + dx * speed * delta, -2.85, 2.85);
       car.position.z = THREE.MathUtils.clamp(car.position.z + dz * speed * delta, TRACK_START_Z - 1, TRACK_END_Z + 1);
       car.rotation.y = Math.atan2(dx, dz);
     }
@@ -384,9 +377,6 @@ function PlayerCar({ onGatePassed, carRef, playerModel }) {
   return (
     <group ref={carRef} position={[0, 0.02, TRACK_START_Z + 1.2]}>
       <Car type={playerModel} accent="#f8fafc" scale={1.1} />
-      <Html position={[0, 1.65, 0]} center>
-        <div className="player-tag">YOU</div>
-      </Html>
     </group>
   );
 }
@@ -415,17 +405,17 @@ function Scene({ activeId, passedIds, onGatePassed, onSelect, playerModel }) {
 
   return (
     <>
-      <color attach="background" args={["#020617"]} />
-      <fog attach="fog" args={["#020617", 22, 74]} />
+      <color attach="background" args={["#87CEEB"]} />
+      <fog attach="fog" args={["#87CEEB", 55, 140]} />
 
-      <ambientLight intensity={0.68} />
+      <ambientLight intensity={1.1} />
       <directionalLight position={[8, 12, 6]} intensity={2.8} castShadow shadow-mapSize={[2048, 2048]} />
       <pointLight position={[0, 4, -22]} intensity={2.4} color="#38bdf8" />
       <pointLight position={[0, 4, 0]} intensity={2.2} color="#a78bfa" />
       <pointLight position={[0, 4, 22]} intensity={2.3} color="#f97316" />
 
-      <Environment preset="city" />
-      <Stars radius={95} depth={65} count={1800} factor={3.2} fade speed={0.35} />
+      <Environment preset="park" />
+      
 
       <Road />
 

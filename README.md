@@ -20,3 +20,10 @@ Delete the old `package-lock.json` from GitHub before running the workflow again
 GitHub Pages setting:
 
 Settings → Pages → Source: GitHub Actions
+
+
+## v5 visual/control tweaks
+
+- Removed START / FINISH / YOU labels.
+- Changed the sky to blue and widened the ground significantly.
+- Swapped left/right movement controls.
