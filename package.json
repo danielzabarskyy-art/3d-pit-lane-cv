@@ -1,11 +1,11 @@
 {
-  "name": "daniel-3d-gate-cv-v4",
+  "name": "daniel-3d-gate-cv-v8-3",
   "private": true,
-  "version": "4.0.0",
+  "version": "8.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm install --no-audit --no-fund --legacy-peer-deps && npx vite build",
     "preview": "vite preview"
   },
   "dependencies": {

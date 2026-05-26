@@ -76,3 +76,13 @@ What changed:
 - Added `public/trackpack/RaceTrackExport/Track_small.glb`.
 - Updated the code to load the small GLB with `GLTFLoader`.
 - Kept `Banners.fbx` and banner images.
+
+
+## v8.3 robust build patch
+
+This version fixes the `vite: not found` error even if GitHub accidentally keeps an older workflow.
+
+Changes:
+- `package.json` build script now installs dependencies before building.
+- `.github/workflows/deploy.yml` is still included and should be uploaded/replaced.
+- A copy of the workflow is also included as `COPY_THIS_TO_GITHUB_DEPLOY_YML.txt` in case the hidden `.github` folder is missed by the browser uploader.
