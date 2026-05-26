@@ -33,3 +33,15 @@ Settings → Pages → Source: GitHub Actions
 
 - Added visible curves to the track.
 - Made the track longer with more space between gates.
+
+
+## v7 curve alignment fix
+
+- Rebuilt the track from a single curved centerline path inspired by your uploaded graphic.
+- The road, gates, and car all follow the same path now.
+- The car moves forward/back along the track and shifts left/right across the road width.
+
+
+### Build reliability
+
+This version calls Vite directly through `node ./node_modules/vite/bin/vite.js` to avoid the broken `.bin/vite` wrapper issue.
